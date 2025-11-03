@@ -1,0 +1,37 @@
+{
+  "name": "e_motel_backend",
+  "version": "1.0.0",
+  "description": "Backend for E-Motel Application",
+  "main": "src/main.ts",
+  "scripts": {
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "build": "nest build",
+    "test": "jest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@nestjs/common": "^11.1.8",
+    "@nestjs/config": "^4.0.2",
+    "@nestjs/core": "^11.1.8",
+    "@nestjs/jwt": "^11.0.1",
+    "@nestjs/platform-express": "^11.1.8",
+    "@nestjs/typeorm": "^11.0.0",
+    "@types/nodemailer": "^7.0.3",
+    "bcryptjs": "^3.0.3",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.2",
+    "cloudinary": "^2.8.0",
+    "nodemailer": "^7.0.10",
+    "pg": "^8.16.3",
+    "typeorm": "^0.3.27"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.10",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.0",
+    "typescript": "^5.9.3"
+  }
+}
