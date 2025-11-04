@@ -1,10 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Motel } from './entities/motel.entity';
 import { Image } from '../image/entities/image.entity';
 import { CreateMotelDto, UpdateMotelDto } from './dto/motel.dto';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UserRole } from '../user/entities/user.entity';
 
 @Injectable()
@@ -14,43 +13,62 @@ export class MotelService {
     private readonly motelRepository: Repository<Motel>,
     @InjectRepository(Image)
     private readonly imageRepository: Repository<Image>,
-    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
-  async create(userId: string, createMotelDto: CreateMotelDto): Promise<Motel> {
-    // avoid passing raw image URLs array into entity.create (TypeORM expects Image[])
-    const { images, ...motelData } = createMotelDto as any;
-    const motel: Partial<Motel> = this.motelRepository.create({
-      ...(motelData as any),
-      ownerId: userId,
-    } as any) as Partial<Motel>;
+  /**
+   * Validate URL format
+   */
+  private isValidUrl(url: string): boolean {
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
 
-    // Handle logo upload if provided as base64
-    if (createMotelDto.logo && createMotelDto.logo.startsWith('data:image')) {
-      const uploadResult = await this.cloudinaryService.uploadImage(createMotelDto.logo);
-      motel.logo = uploadResult.url;
+  /**
+   * Validate image URLs
+   */
+  private validateImageUrls(urls: string[]): void {
+    const invalidUrls = urls.filter(url => !this.isValidUrl(url));
+    if (invalidUrls.length > 0) {
+      throw new BadRequestException(`Invalid image URLs: ${invalidUrls.join(', ')}`);
+    }
+  }
+
+  async create(userId: string, createMotelDto: CreateMotelDto): Promise<Motel> {
+    const { images, logo, ...motelData } = createMotelDto;
+
+    // Validate logo URL if provided
+    if (logo && !this.isValidUrl(logo)) {
+      throw new BadRequestException('Invalid logo URL');
     }
 
-    // Save the motel first to get the ID
-  const savedMotel = (await this.motelRepository.save(motel)) as Motel;
-
-    // Handle multiple images if provided (upload then create Image entities)
+    // Validate image URLs if provided
     if (images && images.length > 0) {
-      const imagePromises = images.map(async (imageData: string) => {
-        if (imageData.startsWith('data:image')) {
-          const uploadResult = await this.cloudinaryService.uploadImage(imageData);
-          const image = this.imageRepository.create({
-            url: uploadResult.url,
-            motelId: savedMotel.id,
-          });
-          return this.imageRepository.save(image);
-        } else {
-          const image = this.imageRepository.create({ url: imageData, motelId: savedMotel.id });
-          return this.imageRepository.save(image);
-        }
-      });
+      this.validateImageUrls(images);
+    }
 
-      await Promise.all(imagePromises);
+    // Create motel
+    const motel = this.motelRepository.create({
+      ...motelData,
+      logo,
+      ownerId: userId,
+    });
+
+    // Save motel
+    const savedMotel = await this.motelRepository.save(motel);
+
+    // Create image entities if images provided
+    if (images && images.length > 0) {
+      const imageEntities = images.map(url => 
+        this.imageRepository.create({
+          url,
+          motelId: savedMotel.id,
+        })
+      );
+      await this.imageRepository.save(imageEntities);
     }
 
     return this.findOne(savedMotel.id);
@@ -59,6 +77,9 @@ export class MotelService {
   async findAll(): Promise<Motel[]> {
     return this.motelRepository.find({
       relations: ['owner', 'rooms', 'images'],
+      order: {
+        createdAt: 'DESC',
+      },
     });
   }
 
@@ -69,48 +90,59 @@ export class MotelService {
     });
 
     if (!motel) {
-      throw new NotFoundException('Motel not found');
+      throw new NotFoundException(`Motel with ID ${id} not found`);
     }
 
     return motel;
   }
 
-  async update(id: string, userId: string, userRole: UserRole, updateMotelDto: UpdateMotelDto): Promise<Motel> {
+  async update(
+    id: string,
+    userId: string,
+    userRole: UserRole,
+    updateMotelDto: UpdateMotelDto,
+  ): Promise<Motel> {
     const motel = await this.findOne(id);
 
-    // Check if user has permission to update
+    // Check permission
     if (userRole !== UserRole.ADMIN && motel.ownerId !== userId) {
       throw new ForbiddenException('You do not have permission to update this motel');
     }
 
-    // Handle logo update if provided
-    if (updateMotelDto.logo && updateMotelDto.logo.startsWith('data:image')) {
-      const uploadResult = await this.cloudinaryService.uploadImage(updateMotelDto.logo);
-      updateMotelDto.logo = uploadResult.url;
+    const { images, logo, ...motelData } = updateMotelDto;
+
+    // Validate logo URL if provided
+    if (logo && !this.isValidUrl(logo)) {
+      throw new BadRequestException('Invalid logo URL');
     }
 
     // Update basic motel information
-    Object.assign(motel, updateMotelDto);
+    Object.assign(motel, {
+      ...motelData,
+      ...(logo !== undefined && { logo }), // Allow null to remove logo
+    });
     await this.motelRepository.save(motel);
 
     // Handle images update if provided
-    if (updateMotelDto.images && updateMotelDto.images.length > 0) {
-      // Remove existing images
+    if (images !== undefined) {
+      // Validate URLs
+      if (images.length > 0) {
+        this.validateImageUrls(images);
+      }
+
+      // Remove all existing images
       await this.imageRepository.delete({ motelId: id });
 
-      // Upload and save new images
-      const imagePromises = updateMotelDto.images.map(async (imageData) => {
-        if (imageData.startsWith('data:image')) {
-          const uploadResult = await this.cloudinaryService.uploadImage(imageData);
-          const image = this.imageRepository.create({
-            url: uploadResult.url,
+      // Create new images
+      if (images.length > 0) {
+        const imageEntities = images.map(url =>
+          this.imageRepository.create({
+            url,
             motelId: id,
-          });
-          return this.imageRepository.save(image);
-        }
-      });
-
-      await Promise.all(imagePromises);
+          })
+        );
+        await this.imageRepository.save(imageEntities);
+      }
     }
 
     return this.findOne(id);
@@ -119,6 +151,7 @@ export class MotelService {
   async remove(id: string, userId: string, userRole: UserRole): Promise<void> {
     const motel = await this.findOne(id);
 
+    // Check permission
     if (userRole !== UserRole.ADMIN && motel.ownerId !== userId) {
       throw new ForbiddenException('You do not have permission to delete this motel');
     }
@@ -130,6 +163,9 @@ export class MotelService {
     return this.motelRepository.find({
       where: { ownerId },
       relations: ['rooms', 'images'],
+      order: {
+        createdAt: 'DESC',
+      },
     });
   }
 }
