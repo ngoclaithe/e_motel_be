@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, MoreThan } from 'typeorm';
 import * as bcrypt from 'bcryptjs';
-import { User } from '../user/entities/user.entity';
+import { User, UserRole } from '../user/entities/user.entity';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from './dto/auth.dto';
 import { MailService } from '../mail/mail.service';
 
@@ -14,7 +14,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<User> {
     const existingUser = await this.userRepository.findOne({
@@ -26,14 +26,16 @@ export class AuthService {
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    
     const user = this.userRepository.create({
       ...registerDto,
       password: hashedPassword,
+      role: registerDto.role || UserRole.TENANT, 
     });
 
     await this.userRepository.save(user);
     await this.mailService.sendVerificationEmail(user.email);
-    
+
     return user;
   }
 
@@ -69,8 +71,8 @@ export class AuthService {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     user.resetPasswordOtp = otp;
-  user.resetPasswordOtp = otp;
-  user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+    user.resetPasswordOtp = otp;
+    user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     await this.userRepository.save(user);
 
     await this.mailService.sendPasswordResetEmail(user.email, otp);
@@ -79,7 +81,7 @@ export class AuthService {
 
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
     const user = await this.userRepository.findOne({
-      where: { 
+      where: {
         email: resetPasswordDto.email,
         resetPasswordOtp: resetPasswordDto.otp,
         resetPasswordExpires: MoreThan(new Date()),
@@ -198,6 +200,31 @@ export class AuthService {
       return { message: 'Email verified successfully' };
     } catch (error) {
       throw new UnauthorizedException('Invalid verification token');
+    }
+  }
+
+  async getMe(userId: string) {
+    try {
+      console.log("Giá trị của userId là: ", userId);
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'email', 'role', 'isVerified', 'createdAt', 'updatedAt'] 
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        isVerified: user.isVerified,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid token');
     }
   }
 }
