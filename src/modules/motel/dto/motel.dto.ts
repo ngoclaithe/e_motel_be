@@ -5,11 +5,17 @@ import {
   IsNumber, 
   IsArray, 
   IsUrl,
+  IsBoolean,
+  IsEnum,
+  IsEmail,
+  IsPhoneNumber,
   Min,
+  Max,
   MaxLength,
   ArrayMaxSize 
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { AlleyType, SecurityType } from '../entities/motel.entity';
 
 export class CreateMotelDto {
   @IsString()
@@ -33,11 +39,7 @@ export class CreateMotelDto {
   @Type(() => Number)
   totalRooms: number;
 
-  @IsString()
-  @IsOptional()
-  @IsUrl({}, { message: 'Logo must be a valid URL' })
-  logo?: string;
-
+  // Location
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
@@ -48,11 +50,207 @@ export class CreateMotelDto {
   @Type(() => Number)
   longitude?: number;
 
+  // Access & Infrastructure
+  @IsEnum(AlleyType)
+  @IsOptional()
+  alleyType?: AlleyType;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  alleyWidth?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  hasElevator?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasParking?: boolean;
+
+  // Security
+  @IsEnum(SecurityType)
+  @IsOptional()
+  securityType?: SecurityType;
+
+  @IsBoolean()
+  @IsOptional()
+  has24hSecurity?: boolean;
+
+  // Utilities & Amenities
+  @IsBoolean()
+  @IsOptional()
+  hasWifi?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasAirConditioner?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasWashingMachine?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasKitchen?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasRooftop?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  allowPets?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  allowCooking?: boolean;
+
+  // Pricing & Payment
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  electricityCostPerKwh?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  waterCostPerCubicMeter?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  internetCost?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  parkingCost?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(12)
+  @Type(() => Number)
+  paymentCycleMonths?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Max(12)
+  @Type(() => Number)
+  depositMonths?: number;
+
+  // Contact Info
+  @IsString()
+  @IsOptional()
+  @MaxLength(20)
+  contactPhone?: string;
+
+  @IsEmail()
+  @IsOptional()
+  contactEmail?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(20)
+  contactZalo?: string;
+
+  // Additional Info
+  @IsString()
+  @IsOptional()
+  @MaxLength(5000)
+  regulations?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @ArrayMaxSize(20)
+  nearbyPlaces?: string[];
+
+  // Images
   @IsArray()
   @IsOptional()
   @IsUrl({}, { each: true, message: 'Each image must be a valid URL' })
   @ArrayMaxSize(20, { message: 'Maximum 20 images allowed' })
   images?: string[];
+}
+
+export class FilterMotelDto {
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Type(() => Number)
+  page?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(100)
+  @Type(() => Number)
+  limit?: number;
+
+  @IsString()
+  @IsOptional()
+  search?: string;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  minPrice?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  maxPrice?: number;
+
+  @IsEnum(AlleyType)
+  @IsOptional()
+  alleyType?: AlleyType;
+
+  @IsEnum(SecurityType)
+  @IsOptional()
+  securityType?: SecurityType;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  hasWifi?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  hasParking?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  hasElevator?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  allowPets?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  allowCooking?: boolean;
+
+  @IsString()
+  @IsOptional()
+  sortBy?: string;
+
+  @IsString()
+  @IsOptional()
+  sortOrder?: 'ASC' | 'DESC';
 }
 
 export class UpdateMotelDto {
@@ -77,11 +275,7 @@ export class UpdateMotelDto {
   @Type(() => Number)
   totalRooms?: number;
 
-  @IsString()
-  @IsOptional()
-  @IsUrl({}, { message: 'Logo must be a valid URL' })
-  logo?: string;
-
+  // Location
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
@@ -92,6 +286,130 @@ export class UpdateMotelDto {
   @Type(() => Number)
   longitude?: number;
 
+  // Access & Infrastructure
+  @IsEnum(AlleyType)
+  @IsOptional()
+  alleyType?: AlleyType;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  alleyWidth?: number;
+
+  @IsBoolean()
+  @IsOptional()
+  hasElevator?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasParking?: boolean;
+
+  // Security
+  @IsEnum(SecurityType)
+  @IsOptional()
+  securityType?: SecurityType;
+
+  @IsBoolean()
+  @IsOptional()
+  has24hSecurity?: boolean;
+
+  // Utilities & Amenities
+  @IsBoolean()
+  @IsOptional()
+  hasWifi?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasAirConditioner?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasWashingMachine?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasKitchen?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  hasRooftop?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  allowPets?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  allowCooking?: boolean;
+
+  // Pricing & Payment
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  electricityCostPerKwh?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  waterCostPerCubicMeter?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  internetCost?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  parkingCost?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(1)
+  @Max(12)
+  @Type(() => Number)
+  paymentCycleMonths?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Max(12)
+  @Type(() => Number)
+  depositMonths?: number;
+
+  // Contact Info
+  @IsString()
+  @IsOptional()
+  @MaxLength(20)
+  contactPhone?: string;
+
+  @IsEmail()
+  @IsOptional()
+  contactEmail?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(20)
+  contactZalo?: string;
+
+  // Additional Info
+  @IsString()
+  @IsOptional()
+  @MaxLength(5000)
+  regulations?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  @ArrayMaxSize(20)
+  nearbyPlaces?: string[];
+
+  // Images
   @IsArray()
   @IsOptional()
   @IsUrl({}, { each: true, message: 'Each image must be a valid URL' })

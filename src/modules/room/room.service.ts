@@ -1,10 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room, RoomStatus } from './entities/room.entity';
 import { Image } from '../image/entities/image.entity';
 import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
-import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { UserRole } from '../user/entities/user.entity';
 
 @Injectable()
@@ -14,31 +13,56 @@ export class RoomService {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(Image)
     private readonly imageRepository: Repository<Image>,
-    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
+  /**
+   * Validate URL format
+   */
+  private isValidUrl(url: string): boolean {
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Validate image URLs
+   */
+  private validateImageUrls(urls: string[]): void {
+    const invalidUrls = urls.filter(url => !this.isValidUrl(url));
+    if (invalidUrls.length > 0) {
+      throw new BadRequestException(`Invalid image URLs: ${invalidUrls.join(', ')}`);
+    }
+  }
+
   async create(createRoomDto: CreateRoomDto): Promise<Room> {
-    // exclude images from initial create to avoid type mismatch with Image[] relation
-    const { images, ...roomData } = createRoomDto as any;
-    const room: Partial<Room> = this.roomRepository.create({ ...(roomData as any), status: RoomStatus.VACANT } as any) as Partial<Room>;
+    const { images, ...roomData } = createRoomDto;
 
-    // Save the room first to get the ID
-    const savedRoom = (await this.roomRepository.save(room)) as Room;
-
-    // Handle images if provided
+    // Validate image URLs if provided
     if (images && images.length > 0) {
-      const imagePromises = images.map(async (imageData: string) => {
-        if (imageData.startsWith('data:image')) {
-          const uploadResult = await this.cloudinaryService.uploadImage(imageData);
-          const image = this.imageRepository.create({
-            url: uploadResult.url,
-            roomId: savedRoom.id,
-          });
-          return this.imageRepository.save(image);
-        }
-      });
+      this.validateImageUrls(images);
+    }
 
-      await Promise.all(imagePromises);
+    // Create room
+    const room = this.roomRepository.create({
+      ...roomData,
+      status: RoomStatus.VACANT,
+    });
+
+    // Save room
+    const savedRoom = await this.roomRepository.save(room);
+
+    // Create image entities if images provided
+    if (images && images.length > 0) {
+      const imageEntities = images.map(url => 
+        this.imageRepository.create({
+          url,
+          roomId: savedRoom.id,
+        })
+      );
+      await this.imageRepository.save(imageEntities);
     }
 
     return this.findOne(savedRoom.id);
@@ -47,6 +71,9 @@ export class RoomService {
   async findAll(): Promise<Room[]> {
     return this.roomRepository.find({
       relations: ['motel', 'tenant', 'images', 'contracts', 'feedbacks'],
+      order: {
+        createdAt: 'DESC',
+      },
     });
   }
 
@@ -57,7 +84,7 @@ export class RoomService {
     });
 
     if (!room) {
-      throw new NotFoundException('Room not found');
+      throw new NotFoundException(`Room with ID ${id} not found`);
     }
 
     return room;
@@ -72,41 +99,54 @@ export class RoomService {
     const room = await this.findOne(id);
 
     // Check if user has permission to update
-    if (userRole !== UserRole.ADMIN && room.motel.ownerId !== userId) {
-      throw new ForbiddenException('You do not have permission to update this room');
+    // Admin can update any room
+    // Owner can update rooms in their motel
+    // For standalone rooms (no motel), only admin can update
+    if (userRole !== UserRole.ADMIN) {
+      if (!room.motel || room.motel.ownerId !== userId) {
+        throw new ForbiddenException('You do not have permission to update this room');
+      }
     }
+
+    const { images, ...roomData } = updateRoomDto;
 
     // Update room information
-    Object.assign(room, updateRoomDto);
+    Object.assign(room, roomData);
+    await this.roomRepository.save(room);
 
     // Handle images update if provided
-    if (updateRoomDto.images && updateRoomDto.images.length > 0) {
-      // Remove existing images
+    if (images !== undefined) {
+      // Validate URLs
+      if (images.length > 0) {
+        this.validateImageUrls(images);
+      }
+
+      // Remove all existing images
       await this.imageRepository.delete({ roomId: id });
 
-      // Upload and save new images
-      const imagePromises = updateRoomDto.images.map(async (imageData) => {
-        if (imageData.startsWith('data:image')) {
-          const uploadResult = await this.cloudinaryService.uploadImage(imageData);
-          const image = this.imageRepository.create({
-            url: uploadResult.url,
+      // Create new images
+      if (images.length > 0) {
+        const imageEntities = images.map(url =>
+          this.imageRepository.create({
+            url,
             roomId: id,
-          });
-          return this.imageRepository.save(image);
-        }
-      });
-
-      await Promise.all(imagePromises);
+          })
+        );
+        await this.imageRepository.save(imageEntities);
+      }
     }
 
-    return this.roomRepository.save(room);
+    return this.findOne(id);
   }
 
   async remove(id: string, userId: string, userRole: UserRole): Promise<void> {
     const room = await this.findOne(id);
 
-    if (userRole !== UserRole.ADMIN && room.motel.ownerId !== userId) {
-      throw new ForbiddenException('You do not have permission to delete this room');
+    // Check permission
+    if (userRole !== UserRole.ADMIN) {
+      if (!room.motel || room.motel.ownerId !== userId) {
+        throw new ForbiddenException('You do not have permission to delete this room');
+      }
     }
 
     await this.roomRepository.remove(room);
@@ -116,6 +156,19 @@ export class RoomService {
     return this.roomRepository.find({
       where: { motelId },
       relations: ['tenant', 'images', 'contracts', 'feedbacks'],
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
+  async findStandaloneRooms(): Promise<Room[]> {
+    return this.roomRepository.find({
+      where: { motelId: null },
+      relations: ['tenant', 'images', 'contracts', 'feedbacks'],
+      order: {
+        createdAt: 'DESC',
+      },
     });
   }
 
@@ -123,6 +176,9 @@ export class RoomService {
     return this.roomRepository.find({
       where: { status: RoomStatus.VACANT },
       relations: ['motel', 'images'],
+      order: {
+        createdAt: 'DESC',
+      },
     });
   }
 

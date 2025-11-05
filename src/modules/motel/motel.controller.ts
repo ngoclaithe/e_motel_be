@@ -1,29 +1,32 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { MotelService } from './motel.service';
-import { CreateMotelDto, UpdateMotelDto } from './dto/motel.dto';
+import { CreateMotelDto, UpdateMotelDto, FilterMotelDto } from './dto/motel.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../user/entities/user.entity';
 
 @Controller('motels')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class MotelController {
   constructor(private readonly motelService: MotelService) {}
 
+  // PUBLIC ROUTES - Không cần token
+  @Get()
+  findAll(@Query() filterDto: FilterMotelDto) {
+    return this.motelService.findAll(filterDto);
+  }
+
+  // PROTECTED ROUTES - Cần token
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
   create(@Req() req, @Body() createMotelDto: CreateMotelDto) {
     return this.motelService.create(req.user.id, createMotelDto);
   }
 
-  @Get()
-  findAll() {
-    return this.motelService.findAll();
-  }
-
   @Get('my-motels')
-  @Roles(UserRole.LANDLORD)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.LANDLORD, UserRole.ADMIN)
   findMyMotels(@Req() req) {
     return this.motelService.findByOwner(req.user.id);
   }
@@ -34,6 +37,7 @@ export class MotelController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
   update(
     @Param('id') id: string,
@@ -44,6 +48,7 @@ export class MotelController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
   remove(@Param('id') id: string, @Req() req) {
     return this.motelService.remove(id, req.user.id, req.user.role);
