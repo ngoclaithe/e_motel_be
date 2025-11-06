@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Room, RoomStatus } from './entities/room.entity';
 import { Image } from '../image/entities/image.entity';
 import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
 import { UserRole } from '../user/entities/user.entity';
+import { Motel } from '../motel/entities/motel.entity';
 
 @Injectable()
 export class RoomService {
@@ -13,6 +14,8 @@ export class RoomService {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(Image)
     private readonly imageRepository: Repository<Image>,
+    @InjectRepository(Motel)
+    private readonly motelRepository: Repository<Motel>,
   ) {}
 
   /**
@@ -149,6 +152,10 @@ export class RoomService {
       }
     }
 
+    // Delete all related images first
+    await this.imageRepository.delete({ roomId: id });
+
+    // Then delete the room
     await this.roomRepository.remove(room);
   }
 
@@ -176,6 +183,32 @@ export class RoomService {
     return this.roomRepository.find({
       where: { status: RoomStatus.VACANT },
       relations: ['motel', 'images'],
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
+  /**
+   * Find all rooms owned by a landlord (rooms in their motels)
+   */
+  async findMyRooms(ownerId: string): Promise<Room[]> {
+    // First, get all motels owned by this user
+    const motels = await this.motelRepository.find({
+      where: { ownerId },
+      select: ['id'],
+    });
+
+    if (motels.length === 0) {
+      return [];
+    }
+
+    const motelIds = motels.map(motel => motel.id);
+
+    // Then get all rooms in those motels
+    return this.roomRepository.find({
+      where: { motelId: In(motelIds) },
+      relations: ['motel', 'tenant', 'images', 'contracts', 'feedbacks'],
       order: {
         createdAt: 'DESC',
       },

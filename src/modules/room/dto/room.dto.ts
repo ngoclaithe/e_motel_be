@@ -118,11 +118,6 @@ export class CreateRoomDto {
   @Type(() => Number)
   floor?: number;
 
-  @IsString()
-  @IsOptional()
-  @MaxLength(50)
-  direction?: string;
-
   // Utilities Cost
   @IsNumber()
   @IsOptional()
@@ -297,11 +292,6 @@ export class UpdateRoomDto {
   @IsOptional()
   @Type(() => Number)
   floor?: number;
-
-  @IsString()
-  @IsOptional()
-  @MaxLength(50)
-  direction?: string;
 
   // Utilities Cost
   @IsNumber()

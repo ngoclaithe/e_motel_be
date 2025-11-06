@@ -110,6 +110,12 @@ export class CreateMotelDto {
   // Pricing & Payment
   @IsNumber()
   @IsOptional()
+  @Min(0, { message: 'Monthly rent must be at least 0' })
+  @Type(() => Number)
+  monthlyRent?: number;
+
+  @IsNumber()
+  @IsOptional()
   @Min(0)
   @Type(() => Number)
   electricityCostPerKwh?: number;
@@ -210,6 +216,18 @@ export class FilterMotelDto {
   @Min(0)
   @Type(() => Number)
   maxPrice?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  minMonthlyRent?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  maxMonthlyRent?: number;
 
   @IsEnum(AlleyType)
   @IsOptional()
@@ -344,6 +362,12 @@ export class UpdateMotelDto {
   allowCooking?: boolean;
 
   // Pricing & Payment
+  @IsNumber()
+  @IsOptional()
+  @Min(0, { message: 'Monthly rent must be at least 0' })
+  @Type(() => Number)
+  monthlyRent?: number;
+
   @IsNumber()
   @IsOptional()
   @Min(0)

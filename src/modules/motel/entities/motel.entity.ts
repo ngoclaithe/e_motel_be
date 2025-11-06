@@ -33,6 +33,9 @@ export class Motel {
   @Column()
   totalRooms: number;
 
+  @Column({ type: 'float', nullable: true })
+  monthlyRent: number;
+  
   // Location
   @Column({ type: 'float', nullable: true })
   latitude: number;

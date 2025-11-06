@@ -109,9 +109,6 @@ export class Room {
   @Column({ type: 'int', nullable: true })
   floor: number; // Tầng
 
-  @Column({ nullable: true })
-  direction: string; // Hướng phòng (Đông, Tây, Nam, Bắc)
-
   // Utilities Cost
   @Column({ type: 'float', nullable: true })
   electricityCostPerKwh: number;

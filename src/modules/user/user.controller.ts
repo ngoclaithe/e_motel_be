@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Delete, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Param, Body, Query, UseGuards, Req } from '@nestjs/common';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -32,6 +32,12 @@ export class UserController {
   @Get('profile')
   getProfile(@Req() req) {
     return this.userService.getProfile(req.user.id);
+  }
+
+  @Get('search/phone')
+  @Roles(UserRole.ADMIN, UserRole.LANDLORD)
+  searchByPhone(@Query('phone') phone: string) {
+    return this.userService.findByPhone(phone);
   }
 
   @Get(':id')

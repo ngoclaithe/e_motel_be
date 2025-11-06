@@ -23,9 +23,6 @@ export class MotelService {
     private readonly imageRepository: Repository<Image>,
   ) {}
 
-  /**
-   * Validate URL format
-   */
   private isValidUrl(url: string): boolean {
     try {
       const parsedUrl = new URL(url);
@@ -35,9 +32,6 @@ export class MotelService {
     }
   }
 
-  /**
-   * Validate image URLs
-   */
   private validateImageUrls(urls: string[]): void {
     const invalidUrls = urls.filter(url => !this.isValidUrl(url));
     if (invalidUrls.length > 0) {
@@ -48,21 +42,17 @@ export class MotelService {
   async create(userId: string, createMotelDto: CreateMotelDto): Promise<Motel> {
     const { images, ...motelData } = createMotelDto;
 
-    // Validate image URLs if provided
     if (images && images.length > 0) {
       this.validateImageUrls(images);
     }
 
-    // Create motel
     const motel = this.motelRepository.create({
       ...motelData,
       ownerId: userId,
     });
 
-    // Save motel
     const savedMotel = await this.motelRepository.save(motel);
 
-    // Create image entities if images provided
     if (images && images.length > 0) {
       const imageEntities = images.map(url => 
         this.imageRepository.create({
@@ -94,26 +84,20 @@ export class MotelService {
       sortOrder = 'DESC',
     } = filterDto || {};
 
-    // Build where conditions
     const where: any = {};
 
-    // Search by name or address
     if (search) {
       where.name = Like(`%${search}%`);
-      // Note: For multiple field search, you'll need to use QueryBuilder
     }
 
-    // Filter by alley type
     if (alleyType) {
       where.alleyType = alleyType;
     }
 
-    // Filter by security type
     if (securityType) {
       where.securityType = securityType;
     }
 
-    // Filter by amenities
     if (hasWifi !== undefined) {
       where.hasWifi = hasWifi;
     }
@@ -130,14 +114,12 @@ export class MotelService {
       where.allowCooking = allowCooking;
     }
 
-    // For advanced search with multiple fields or price range from rooms
     const queryBuilder = this.motelRepository
       .createQueryBuilder('motel')
       .leftJoinAndSelect('motel.owner', 'owner')
       .leftJoinAndSelect('motel.rooms', 'rooms')
       .leftJoinAndSelect('motel.images', 'images');
 
-    // Apply search filter
     if (search) {
       queryBuilder.where(
         '(motel.name LIKE :search OR motel.address LIKE :search OR motel.description LIKE :search)',
@@ -145,7 +127,6 @@ export class MotelService {
       );
     }
 
-    // Apply filters
     if (alleyType) {
       queryBuilder.andWhere('motel.alleyType = :alleyType', { alleyType });
     }
@@ -168,7 +149,6 @@ export class MotelService {
       queryBuilder.andWhere('motel.allowCooking = :allowCooking', { allowCooking });
     }
 
-    // Filter by price range (search in related rooms)
     if (minPrice !== undefined || maxPrice !== undefined) {
       queryBuilder.andWhere('rooms.price IS NOT NULL');
       if (minPrice !== undefined) {
@@ -179,19 +159,15 @@ export class MotelService {
       }
     }
 
-    // Apply sorting
     const validSortFields = ['createdAt', 'updatedAt', 'name', 'totalRooms'];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
     queryBuilder.orderBy(`motel.${sortField}`, sortOrder === 'ASC' ? 'ASC' : 'DESC');
 
-    // Get total count
     const total = await queryBuilder.getCount();
 
-    // Apply pagination
     const skip = (page - 1) * limit;
     queryBuilder.skip(skip).take(limit);
 
-    // Get data
     const data = await queryBuilder.getMany();
 
     return {
@@ -224,28 +200,22 @@ export class MotelService {
   ): Promise<Motel> {
     const motel = await this.findOne(id);
 
-    // Check permission
     if (userRole !== UserRole.ADMIN && motel.ownerId !== userId) {
       throw new ForbiddenException('You do not have permission to update this motel');
     }
 
     const { images, ...motelData } = updateMotelDto;
 
-    // Update basic motel information
     Object.assign(motel, motelData);
     await this.motelRepository.save(motel);
 
-    // Handle images update if provided
     if (images !== undefined) {
-      // Validate URLs
       if (images.length > 0) {
         this.validateImageUrls(images);
       }
 
-      // Remove all existing images
       await this.imageRepository.delete({ motelId: id });
 
-      // Create new images
       if (images.length > 0) {
         const imageEntities = images.map(url =>
           this.imageRepository.create({
@@ -263,15 +233,12 @@ export class MotelService {
   async remove(id: string, userId: string, userRole: UserRole): Promise<void> {
     const motel = await this.findOne(id);
 
-    // Check permission
     if (userRole !== UserRole.ADMIN && motel.ownerId !== userId) {
       throw new ForbiddenException('You do not have permission to delete this motel');
     }
 
-    // Delete all related images first
     await this.imageRepository.delete({ motelId: id });
 
-    // Then delete the motel
     await this.motelRepository.remove(motel);
   }
 

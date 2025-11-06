@@ -8,15 +8,8 @@ import { UserRole } from '../user/entities/user.entity';
 import { RoomStatus } from './entities/room.entity';
 
 @Controller('rooms')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
-
-  @Post()
-  @Roles(UserRole.ADMIN, UserRole.LANDLORD)
-  create(@Body() createRoomDto: CreateRoomDto) {
-    return this.roomService.create(createRoomDto);
-  }
 
   @Get()
   findAll() {
@@ -26,6 +19,26 @@ export class RoomController {
   @Get('vacant')
   findVacant() {
     return this.roomService.findVacant();
+  }
+
+  @Get('standalone')
+  findStandaloneRooms() {
+    return this.roomService.findStandaloneRooms();
+  }
+
+  // PROTECTED ROUTES 
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.LANDLORD)
+  create(@Body() createRoomDto: CreateRoomDto) {
+    return this.roomService.create(createRoomDto);
+  }
+
+  @Get('my-rooms')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.LANDLORD, UserRole.ADMIN)
+  findMyRooms(@Req() req) {
+    return this.roomService.findMyRooms(req.user.id);
   }
 
   @Get('motel/:motelId')
@@ -39,6 +52,7 @@ export class RoomController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
   update(
     @Param('id') id: string,
@@ -49,6 +63,7 @@ export class RoomController {
   }
 
   @Put(':id/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
   updateStatus(
     @Param('id') id: string,
@@ -58,6 +73,7 @@ export class RoomController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
   remove(@Param('id') id: string, @Req() req) {
     return this.roomService.remove(id, req.user.id, req.user.role);

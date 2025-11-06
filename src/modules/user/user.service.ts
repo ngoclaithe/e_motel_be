@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { User, UserRole } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
@@ -28,6 +28,23 @@ export class UserService {
     }
 
     return user;
+  }
+
+  async findByPhone(phone: string): Promise<User[]> {
+    if (!phone || phone.trim() === '') {
+      throw new NotFoundException('Phone number is required');
+    }
+
+    const users = await this.userRepository.find({
+      where: { phoneNumber: Like(`%${phone}%`) },
+      select: ['id', 'firstName', 'lastName', 'phoneNumber', 'role'],
+    });
+
+    if (users.length === 0) {
+      throw new NotFoundException('No user found with this phone number');
+    }
+
+    return users;
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
