@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Put, 
+  Delete, 
+  Body, 
+  Param, 
+  UseGuards, 
+  Req 
+} from '@nestjs/common';
 import { RoomService } from './room.service';
 import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,6 +21,7 @@ import { RoomStatus } from './entities/room.entity';
 export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
+  // PUBLIC ROUTES
   @Get()
   findAll() {
     return this.roomService.findAll();
@@ -21,17 +32,18 @@ export class RoomController {
     return this.roomService.findVacant();
   }
 
-  @Get('standalone')
-  findStandaloneRooms() {
-    return this.roomService.findStandaloneRooms();
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.roomService.findOne(id);
   }
 
-  // PROTECTED ROUTES 
+  // PROTECTED ROUTES
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
-  create(@Body() createRoomDto: CreateRoomDto) {
-    return this.roomService.create(createRoomDto);
+  create(@Body() createRoomDto: CreateRoomDto, @Req() req) {
+    // Gán ownerId từ user đăng nhập
+    return this.roomService.create(createRoomDto, req.user.id);
   }
 
   @Get('my-rooms')
@@ -39,16 +51,6 @@ export class RoomController {
   @Roles(UserRole.LANDLORD, UserRole.ADMIN)
   findMyRooms(@Req() req) {
     return this.roomService.findMyRooms(req.user.id);
-  }
-
-  @Get('motel/:motelId')
-  findByMotel(@Param('motelId') motelId: string) {
-    return this.roomService.findByMotel(motelId);
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.roomService.findOne(id);
   }
 
   @Put(':id')

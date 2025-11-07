@@ -65,6 +65,11 @@ export class User {
   @OneToMany(() => Motel, motel => motel.owner)
   ownedMotels: Motel[];
 
+  // ✅ Rooms owned by this user (landlord)
+  @OneToMany(() => Room, room => room.owner)
+  ownedRooms: Room[];
+
+  // ✅ Rooms rented by this user (tenant)
   @OneToMany(() => Room, room => room.tenant)
   rentedRooms: Room[];
 

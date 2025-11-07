@@ -1,5 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { Motel } from '../../motel/entities/motel.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { Contract } from '../../contract/entities/contract.entity';
 import { Feedback } from '../../feedback/entities/feedback.entity';
@@ -8,18 +16,18 @@ import { Image } from '../../image/entities/image.entity';
 export enum RoomStatus {
   VACANT = 'VACANT',
   OCCUPIED = 'OCCUPIED',
-  MAINTENANCE = 'MAINTENANCE'
+  MAINTENANCE = 'MAINTENANCE',
 }
 
 export enum BathroomType {
-  PRIVATE = 'PRIVATE',    // Khép kín (WC riêng)
-  SHARED = 'SHARED'       // Chung
+  PRIVATE = 'PRIVATE',
+  SHARED = 'SHARED',
 }
 
 export enum FurnishingStatus {
-  FULLY_FURNISHED = 'FULLY_FURNISHED',     // Đầy đủ nội thất
-  PARTIALLY_FURNISHED = 'PARTIALLY_FURNISHED', // Nội thất cơ bản
-  UNFURNISHED = 'UNFURNISHED'              // Không nội thất
+  FULLY_FURNISHED = 'FULLY_FURNISHED',
+  PARTIALLY_FURNISHED = 'PARTIALLY_FURNISHED',
+  UNFURNISHED = 'UNFURNISHED',
 }
 
 @Entity('rooms')
@@ -31,105 +39,80 @@ export class Room {
   number: string;
 
   @Column('float')
-  area: number; // Diện tích (m²)
+  area: number;
 
   @Column('float')
-  price: number; // Giá thuê/tháng
+  price: number;
 
   @Column({
     type: 'enum',
     enum: RoomStatus,
-    default: RoomStatus.VACANT
+    default: RoomStatus.VACANT,
   })
   status: RoomStatus;
 
-  // Bathroom
   @Column({
     type: 'enum',
     enum: BathroomType,
-    default: BathroomType.PRIVATE
+    default: BathroomType.PRIVATE,
   })
   bathroomType: BathroomType;
 
   @Column({ default: false })
-  hasWaterHeater: boolean; // Nóng lạnh
+  hasWaterHeater: boolean;
 
-  // Room Features
   @Column({
     type: 'enum',
     enum: FurnishingStatus,
-    default: FurnishingStatus.UNFURNISHED
+    default: FurnishingStatus.UNFURNISHED,
   })
   furnishingStatus: FurnishingStatus;
 
-  @Column({ default: false })
-  hasAirConditioner: boolean;
-
-  @Column({ default: false })
-  hasBalcony: boolean; // Ban công
-
-  @Column({ default: false })
-  hasWindow: boolean; // Cửa sổ
-
-  @Column({ default: false })
-  hasKitchen: boolean; // Bếp riêng
-
-  @Column({ default: false })
-  hasRefrigerator: boolean; // Tủ lạnh
-
-  @Column({ default: false })
-  hasWashingMachine: boolean; // Máy giặt riêng
-
-  @Column({ default: false })
-  hasWardrobe: boolean; // Tủ quần áo
-
-  @Column({ default: false })
-  hasBed: boolean; // Giường
-
-  @Column({ default: false })
-  hasDesk: boolean; // Bàn học/làm việc
-
-  @Column({ default: false })
-  hasWifi: boolean;
+  // Room features
+  @Column({ default: false }) hasAirConditioner: boolean;
+  @Column({ default: false }) hasBalcony: boolean;
+  @Column({ default: false }) hasWindow: boolean;
+  @Column({ default: false }) hasKitchen: boolean;
+  @Column({ default: false }) hasRefrigerator: boolean;
+  @Column({ default: false }) hasWashingMachine: boolean;
+  @Column({ default: false }) hasWardrobe: boolean;
+  @Column({ default: false }) hasBed: boolean;
+  @Column({ default: false }) hasDesk: boolean;
+  @Column({ default: false }) hasWifi: boolean;
 
   // Capacity & Restrictions
   @Column({ type: 'int', default: 2 })
-  maxOccupancy: number; // Số người tối đa
+  maxOccupancy: number;
 
-  @Column({ default: false })
-  allowPets: boolean;
-
-  @Column({ default: false })
-  allowCooking: boolean;
-
-  @Column({ default: false })
-  allowOppositeGender: boolean; // Cho phép ở ghép nam/nữ
+  @Column({ default: false }) allowPets: boolean;
+  @Column({ default: false }) allowCooking: boolean;
+  @Column({ default: false }) allowOppositeGender: boolean;
 
   // Floor & Position
   @Column({ type: 'int', nullable: true })
-  floor: number; // Tầng
+  floor: number;
 
   // Utilities Cost
-  @Column({ type: 'float', nullable: true })
+  @Column({ type: 'float', nullable: true, default: 0 })
   electricityCostPerKwh: number;
 
-  @Column({ type: 'float', nullable: true })
+  @Column({ type: 'float', nullable: true, default: 0 })
   waterCostPerCubicMeter: number;
 
-  @Column({ type: 'float', nullable: true })
+  @Column({ type: 'float', nullable: true, default: 0 })
   internetCost: number;
 
-  @Column({ type: 'float', nullable: true })
+  @Column({ type: 'float', nullable: true, default: 0 })
   parkingCost: number;
 
-  @Column({ type: 'float', nullable: true })
-  serviceFee: number; // Phí dịch vụ (rác, vệ sinh chung,...)
+  @Column({ type: 'float', nullable: true, default: 0 })
+  serviceFee: number;
 
   // Payment Terms
-  @Column({ type: 'int', default: 1 })
+  @Column({ type: 'int', nullable: true, default: 1 })
   paymentCycleMonths: number;
 
-  @Column({ type: 'int', default: 1 })
+  @Column({ type: 'int', nullable: true, default: 1 })
   depositMonths: number;
 
   // Additional Info
@@ -137,38 +120,48 @@ export class Room {
   description: string;
 
   @Column('simple-array', { nullable: true })
-  amenities: string[]; // Tiện nghi khác
+  amenities: string[];
 
   @Column({ type: 'date', nullable: true })
-  availableFrom: Date; // Có thể vào ở từ ngày
+  availableFrom: Date;
+
+  // Owner (landlord who owns this room directly)
+  @Column()
+  ownerId: string;
+
+  @ManyToOne(() => User, (user) => user.ownedRooms)
+  @JoinColumn({ name: 'ownerId' })
+  owner: User;
+
+  // Tenant (if occupied)
+  @Column({ nullable: true })
+  tenantId: string;
+
+  @ManyToOne(() => User, (user) => user.rentedRooms)
+  @JoinColumn({ name: 'tenantId' })
+  tenant: User;
+
+  @OneToMany(() => Contract, (contract) => contract.room, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  contracts: Contract[];
+
+  @OneToMany(() => Feedback, (feedback) => feedback.room, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  feedbacks: Feedback[];
+
+  @OneToMany(() => Image, (image) => image.room, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
+  images: Image[];
 
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
-
-  // Relations
-  @Column({ nullable: true })
-  motelId: string;
-
-  @ManyToOne(() => Motel, motel => motel.rooms, { nullable: true })
-  @JoinColumn({ name: 'motelId' })
-  motel: Motel;
-
-  @Column({ nullable: true })
-  tenantId: string;
-
-  @ManyToOne(() => User, user => user.rentedRooms)
-  @JoinColumn({ name: 'tenantId' })
-  tenant: User;
-
-  @OneToMany(() => Contract, contract => contract.room)
-  contracts: Contract[];
-
-  @OneToMany(() => Feedback, feedback => feedback.room)
-  feedbacks: Feedback[];
-
-  @OneToMany(() => Image, image => image.room)
-  images: Image[];
 }

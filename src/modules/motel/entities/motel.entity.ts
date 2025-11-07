@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateCol
 import { User } from '../../user/entities/user.entity';
 import { Room } from '../../room/entities/room.entity';
 import { Image } from '../../image/entities/image.entity';
+import { Contract } from '../../contract/entities/contract.entity';
 
 export enum AlleyType {
   CAR = 'CAR',          
@@ -143,9 +144,9 @@ export class Motel {
   @JoinColumn({ name: 'ownerId' })
   owner: User;
 
-  @OneToMany(() => Room, room => room.motel)
-  rooms: Room[];
-
   @OneToMany(() => Image, image => image.motel)
   images: Image[];
+  
+  @OneToMany(() => Contract, contract => contract.motel)
+contracts: Contract[];
 }

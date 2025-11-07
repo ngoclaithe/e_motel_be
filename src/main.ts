@@ -1,15 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { ConsoleLogInterceptor } from './common/interceptors/console-log.interceptor'; // 👈 import ở đây
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: 'http://localhost:3000', 
+    origin: 'http://localhost:3000',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: ['Content-Type', 'Authorization'], 
-    credentials: true, 
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   });
 
   app.setGlobalPrefix('api/v1');
@@ -19,8 +20,11 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      skipMissingProperties: true
     }),
   );
+
+  app.useGlobalInterceptors(new ConsoleLogInterceptor());
 
   await app.listen(8000);
   console.log(`🚀 Server đang chạy tại http://localhost:8000`);

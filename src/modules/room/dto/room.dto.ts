@@ -34,10 +34,6 @@ export class CreateRoomDto {
   @Type(() => Number)
   price: number;
 
-  @IsString()
-  @IsOptional()
-  motelId?: string;
-
   // Bathroom
   @IsEnum(BathroomType)
   @IsOptional()
