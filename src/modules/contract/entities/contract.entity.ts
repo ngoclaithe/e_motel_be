@@ -25,7 +25,7 @@ export class Contract {
     enum: ContractType,
     default: ContractType.ROOM
   })
-  type: ContractType; // Loại hợp đồng
+  type: ContractType;
 
   @Column({ type: 'timestamp' })
   startDate: Date;
@@ -37,18 +37,17 @@ export class Contract {
   monthlyRent: number;
 
   @Column('float')
-  deposit: number; // Tiền đặt cọc
+  deposit: number;
 
   @Column({ type: 'float', default: 1 })
-  paymentCycleMonths: number; // Chu kỳ thanh toán (tháng)
+  paymentCycleMonths: number;
 
   @Column({ type: 'int', nullable: true })
-  paymentDay: number; // Ngày thanh toán hàng tháng (1-31)
+  paymentDay: number;
 
   @Column({ type: 'int', default: 1 })
   depositMonths: number;
 
-  // Utilities pricing (lưu tại thời điểm ký HĐ)
   @Column({ type: 'float', nullable: true })
   electricityCostPerKwh: number;
 
@@ -64,7 +63,6 @@ export class Contract {
   @Column({ type: 'float', nullable: true })
   serviceFee: number;
 
-  // Thông tin dịch vụ
   @Column({ default: false })
   hasWifi: boolean;
 
@@ -72,16 +70,14 @@ export class Contract {
   hasParking: boolean;
 
   @Column({ type: 'int', default: 4 })
-  maxOccupants: number; // Số người tối đa
+  maxOccupants: number;
 
-  // Document
   @Column({ type: 'text', nullable: true })
-  documentContent: string; // Nội dung văn bản hợp đồng (HTML/Text)
+  documentContent: string;
 
   @Column({ nullable: true })
-  documentUrl: string; // URL file PDF nếu có
+  documentUrl: string;
 
-  // Status
   @Column({
     type: 'enum',
     enum: ContractStatus,
@@ -89,12 +85,11 @@ export class Contract {
   })
   status: ContractStatus;
 
-  // Additional terms
   @Column({ type: 'text', nullable: true })
-  specialTerms: string; // Điều khoản đặc biệt (nếu có)
+  specialTerms: string;
 
   @Column({ type: 'text', nullable: true })
-  regulations: string; // Nội quy (từ motel)
+  regulations: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -102,23 +97,20 @@ export class Contract {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  // Relations - Room (nullable vì có thể thuê cả motel)
   @Column({ nullable: true })
   roomId: string;
 
-  @ManyToOne(() => Room, room => room.contracts, { nullable: true })
+  @ManyToOne(() => Room, { nullable: true }) 
   @JoinColumn({ name: 'roomId' })
   room: Room;
 
-  // Relations - Motel (nullable vì có thể chỉ thuê room)
   @Column({ nullable: true })
   motelId: string;
 
-  @ManyToOne(() => Motel, motel => motel.contracts, { nullable: true })
+  @ManyToOne(() => Motel, { nullable: true }) 
   @JoinColumn({ name: 'motelId' })
   motel: Motel;
 
-  // Tenant
   @Column()
   tenantId: string;
 

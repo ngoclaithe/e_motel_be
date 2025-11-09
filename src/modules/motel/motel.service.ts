@@ -117,7 +117,6 @@ export class MotelService {
     const queryBuilder = this.motelRepository
       .createQueryBuilder('motel')
       .leftJoinAndSelect('motel.owner', 'owner')
-      .leftJoinAndSelect('motel.rooms', 'rooms')
       .leftJoinAndSelect('motel.images', 'images');
 
     if (search) {
@@ -149,16 +148,6 @@ export class MotelService {
       queryBuilder.andWhere('motel.allowCooking = :allowCooking', { allowCooking });
     }
 
-    if (minPrice !== undefined || maxPrice !== undefined) {
-      queryBuilder.andWhere('rooms.price IS NOT NULL');
-      if (minPrice !== undefined) {
-        queryBuilder.andWhere('rooms.price >= :minPrice', { minPrice });
-      }
-      if (maxPrice !== undefined) {
-        queryBuilder.andWhere('rooms.price <= :maxPrice', { maxPrice });
-      }
-    }
-
     const validSortFields = ['createdAt', 'updatedAt', 'name', 'totalRooms'];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
     queryBuilder.orderBy(`motel.${sortField}`, sortOrder === 'ASC' ? 'ASC' : 'DESC');
@@ -182,7 +171,7 @@ export class MotelService {
   async findOne(id: string): Promise<Motel> {
     const motel = await this.motelRepository.findOne({
       where: { id },
-      relations: ['owner', 'rooms', 'images'],
+      relations: ['owner', 'images'],
     });
 
     if (!motel) {
@@ -245,7 +234,7 @@ export class MotelService {
   async findByOwner(ownerId: string): Promise<Motel[]> {
     return this.motelRepository.find({
       where: { ownerId },
-      relations: ['rooms', 'images'],
+      relations: ['images'],
       order: {
         createdAt: 'DESC',
       },
