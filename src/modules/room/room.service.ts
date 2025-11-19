@@ -48,7 +48,7 @@ export class RoomService {
 
     const room = this.roomRepository.create({
       ...roomData,
-      ownerId, // Gán ownerId từ user đăng nhập
+      ownerId, 
       status: RoomStatus.VACANT,
     });
 

@@ -125,15 +125,13 @@ export class MotelService {
       queryBuilder.andWhere('motel.allowCooking = :allowCooking', { allowCooking });
     }
 
-    // ✅ Filter theo giá dựa trên Motel.monthlyRent thay vì rooms.price
     if (minPrice !== undefined || maxPrice !== undefined) {
-      queryBuilder.andWhere('motel.monthlyRent IS NOT NULL');
-
+      queryBuilder.andWhere('rooms.price IS NOT NULL');
       if (minPrice !== undefined) {
-        queryBuilder.andWhere('motel.monthlyRent >= :minPrice', { minPrice });
+        queryBuilder.andWhere('rooms.price >= :minPrice', { minPrice });
       }
       if (maxPrice !== undefined) {
-        queryBuilder.andWhere('motel.monthlyRent <= :maxPrice', { maxPrice });
+        queryBuilder.andWhere('rooms.price <= :maxPrice', { maxPrice });
       }
     }
 

@@ -1,20 +1,19 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
-import { Room } from '../../room/entities/room.entity';
 import { Image } from '../../image/entities/image.entity';
 import { Contract } from '../../contract/entities/contract.entity';
 
 export enum AlleyType {
-  CAR = 'CAR',          
-  MOTORBIKE = 'MOTORBIKE', 
-  WALKING = 'WALKING'     
+  CAR = 'CAR',
+  MOTORBIKE = 'MOTORBIKE',
+  WALKING = 'WALKING'
 }
 
 export enum SecurityType {
-  CAMERA = 'CAMERA',           
-  GUARD = 'GUARD',             
-  FINGERPRINT = 'FINGERPRINT', 
-  NONE = 'NONE'                
+  CAMERA = 'CAMERA',
+  GUARD = 'GUARD',
+  FINGERPRINT = 'FINGERPRINT',
+  NONE = 'NONE'
 }
 
 @Entity('motels')
@@ -36,7 +35,7 @@ export class Motel {
 
   @Column({ type: 'float', nullable: true })
   monthlyRent: number;
-  
+
   // Location
   @Column({ type: 'float', nullable: true })
   latitude: number;
@@ -53,13 +52,13 @@ export class Motel {
   alleyType: AlleyType;
 
   @Column({ type: 'float', nullable: true })
-  alleyWidth: number; 
+  alleyWidth: number;
 
   @Column({ default: false })
-  hasElevator: boolean; 
+  hasElevator: boolean;
 
   @Column({ default: false })
-  hasParking: boolean; 
+  hasParking: boolean;
 
   // Security
   @Column({
@@ -70,7 +69,7 @@ export class Motel {
   securityType: SecurityType;
 
   @Column({ default: false })
-  has24hSecurity: boolean; 
+  has24hSecurity: boolean;
 
   // Utilities & Amenities
   @Column({ default: false })
@@ -80,38 +79,38 @@ export class Motel {
   hasAirConditioner: boolean;
 
   @Column({ default: false })
-  hasWashingMachine: boolean; 
+  hasWashingMachine: boolean;
 
   @Column({ default: false })
-  hasKitchen: boolean; 
+  hasKitchen: boolean;
 
   @Column({ default: false })
-  hasRooftop: boolean; 
+  hasRooftop: boolean;
 
   @Column({ default: false })
   allowPets: boolean;
 
   @Column({ default: false })
-  allowCooking: boolean; 
+  allowCooking: boolean;
 
   // Pricing & Payment
   @Column({ type: 'float', nullable: true })
-  electricityCostPerKwh: number; 
+  electricityCostPerKwh: number;
 
   @Column({ type: 'float', nullable: true })
-  waterCostPerCubicMeter: number; 
+  waterCostPerCubicMeter: number;
 
   @Column({ type: 'float', nullable: true })
-  internetCost: number; 
+  internetCost: number;
 
   @Column({ type: 'float', nullable: true })
-  parkingCost: number; 
+  parkingCost: number;
 
   @Column({ type: 'int', default: 1 })
-  paymentCycleMonths: number; 
+  paymentCycleMonths: number;
 
   @Column({ type: 'int', default: 1 })
-  depositMonths: number; 
+  depositMonths: number;
 
   // Contact Info
   @Column({ nullable: true })
@@ -125,10 +124,10 @@ export class Motel {
 
   // Additional Info
   @Column({ type: 'text', nullable: true })
-  regulations: string; 
+  regulations: string;
 
   @Column({ type: 'simple-array', nullable: true })
-  nearbyPlaces: string[]; 
+  nearbyPlaces: string[];
 
   @CreateDateColumn()
   createdAt: Date;
@@ -146,7 +145,7 @@ export class Motel {
 
   @OneToMany(() => Image, image => image.motel)
   images: Image[];
-  
+
   @OneToMany(() => Contract, contract => contract.motel)
-contracts: Contract[];
+  contracts: Contract[];
 }
