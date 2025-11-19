@@ -6,7 +6,10 @@ import { CreateContractDto, UpdateContractDto } from './dto/contract.dto';
 import { Room, RoomStatus } from '../room/entities/room.entity';
 import { Motel } from '../motel/entities/motel.entity';
 import { User, UserRole } from '../user/entities/user.entity';
+import { join } from 'path';
+import { Response } from 'express';
 
+import PdfPrinter = require('pdfmake');
 @Injectable()
 export class ContractService {
   constructor(
@@ -18,7 +21,7 @@ export class ContractService {
     private readonly motelRepository: Repository<Motel>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-  ) {}
+  ) { }
 
   async create(createDto: CreateContractDto) {
     let room: Room = null;
@@ -31,11 +34,11 @@ export class ContractService {
         throw new BadRequestException('roomId is required for ROOM contract');
       }
 
-      room = await this.roomRepository.findOne({ 
-        where: { id: createDto.roomId }, 
-        relations: ['owner'] 
+      room = await this.roomRepository.findOne({
+        where: { id: createDto.roomId },
+        relations: ['owner']
       });
-      
+
       if (!room) {
         throw new NotFoundException('Room not found');
       }
@@ -52,16 +55,16 @@ export class ContractService {
         throw new BadRequestException('motelId is required for MOTEL contract');
       }
 
-      motel = await this.motelRepository.findOne({ 
-        where: { id: createDto.motelId }, 
-        relations: ['owner'] 
+      motel = await this.motelRepository.findOne({
+        where: { id: createDto.motelId },
+        relations: ['owner']
       });
-      
+
       if (!motel) {
         throw new NotFoundException('Motel not found');
       }
 
-      
+
       ownerId = motel.ownerId;
       owner = motel.owner;
     } else {
@@ -69,10 +72,10 @@ export class ContractService {
     }
 
     // Load tenant info
-    const tenant = await this.userRepository.findOne({ 
-      where: { id: createDto.tenantId } 
+    const tenant = await this.userRepository.findOne({
+      where: { id: createDto.tenantId }
     });
-    
+
     if (!tenant) {
       throw new NotFoundException('Tenant not found');
     }
@@ -98,18 +101,18 @@ export class ContractService {
       depositMonths: createDto.depositMonths ?? (room?.depositMonths || motel?.depositMonths || 1),
       paymentDay: createDto.paymentDay ?? 5,
       maxOccupants: createDto.maxOccupants ?? (room?.maxOccupancy || (motel ? motel.totalRooms * 4 : 2)),
-      
+
       // Service costs - priority: DTO > Room > Motel
       electricityCostPerKwh: createDto.electricityCostPerKwh ?? (room?.electricityCostPerKwh || motel?.electricityCostPerKwh),
       waterCostPerCubicMeter: createDto.waterCostPerCubicMeter ?? (room?.waterCostPerCubicMeter || motel?.waterCostPerCubicMeter),
       internetCost: createDto.internetCost ?? (room?.internetCost || motel?.internetCost),
       parkingCost: createDto.parkingCost ?? (room?.parkingCost || motel?.parkingCost),
       serviceFee: createDto.serviceFee ?? room?.serviceFee,
-      
+
       // Services availability
       hasWifi: room?.hasWifi || motel?.hasWifi,
       hasParking: motel?.hasParking,
-      
+
       // Additional info
       specialTerms: createDto.specialTerms,
       regulations: motel?.regulations,
@@ -137,7 +140,7 @@ export class ContractService {
   }
 
   private generateContractDocument(
-    contract: Contract, 
+    contract: Contract,
     room: Room | null,
     motel: Motel | null,
     owner: User,
@@ -146,7 +149,7 @@ export class ContractService {
     const today = new Date();
     const startDate = new Date(contract.startDate);
     const endDate = new Date(contract.endDate);
-    
+
     const durationMonths = Math.round(
       (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
     );
@@ -190,8 +193,8 @@ export class ContractService {
       services.push(`Phí dịch vụ (rác, vệ sinh): ${contract.serviceFee.toLocaleString('vi-VN')} đồng/tháng`);
     }
 
-    const servicesText = services.length > 0 
-      ? services.join('; ') 
+    const servicesText = services.length > 0
+      ? services.join('; ')
       : 'Không có phí dịch vụ phát sinh';
 
     let rentalDescription: string;
@@ -220,7 +223,7 @@ export class ContractService {
       ownerAddress = 'Chưa rõ';
     }
 
-    const contactPhone = contract.type === ContractType.MOTEL && motel 
+    const contactPhone = contract.type === ContractType.MOTEL && motel
       ? (motel.contactPhone || owner.phoneNumber || '................................')
       : (owner.phoneNumber || '................................');
 
@@ -319,16 +322,16 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
   }
 
   async findAll() {
-    return this.contractRepository.find({ 
+    return this.contractRepository.find({
       relations: ['room', 'room.owner', 'motel', 'motel.owner', 'tenant', 'bills'],
       order: { createdAt: 'DESC' }
     });
   }
 
   async findOne(id: string) {
-    const contract = await this.contractRepository.findOne({ 
-      where: { id }, 
-      relations: ['room', 'room.owner', 'motel', 'motel.owner', 'tenant', 'bills'] 
+    const contract = await this.contractRepository.findOne({
+      where: { id },
+      relations: ['room', 'room.owner', 'motel', 'motel.owner', 'tenant', 'bills']
     });
     if (!contract) {
       throw new NotFoundException('Contract not found');
@@ -338,7 +341,7 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
 
   async update(id: string, userId: string, userRole: UserRole, updateDto: UpdateContractDto) {
     const contract = await this.findOne(id);
-    
+
     const ownerId = contract.room?.ownerId || contract.motel?.ownerId;
     if (userRole !== UserRole.ADMIN && ownerId !== userId) {
       throw new ForbiddenException('No permission to update this contract');
@@ -347,7 +350,7 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
     if (updateDto.startDate || updateDto.endDate) {
       const startDate = updateDto.startDate ? new Date(updateDto.startDate) : contract.startDate;
       const endDate = updateDto.endDate ? new Date(updateDto.endDate) : contract.endDate;
-      
+
       if (endDate <= startDate) {
         throw new BadRequestException('End date must be after start date');
       }
@@ -358,7 +361,7 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
     if (updateDto.monthlyRent || updateDto.deposit || updateDto.startDate || updateDto.endDate) {
       const owner = contract.room?.owner || contract.motel?.owner;
       contract.documentContent = this.generateContractDocument(
-        contract, 
+        contract,
         contract.room,
         contract.motel,
         owner,
@@ -371,7 +374,7 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
 
   async terminate(id: string, userId: string, userRole: UserRole) {
     const contract = await this.findOne(id);
-    
+
     const ownerId = contract.room?.ownerId || contract.motel?.ownerId;
     if (userRole !== UserRole.ADMIN && ownerId !== userId) {
       throw new ForbiddenException('No permission to terminate this contract');
@@ -391,7 +394,7 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
 
   async remove(id: string, userId: string, userRole: UserRole) {
     const contract = await this.findOne(id);
-    
+
     const ownerId = contract.room?.ownerId || contract.motel?.ownerId;
     if (userRole !== UserRole.ADMIN && ownerId !== userId) {
       throw new ForbiddenException('No permission to delete this contract');
@@ -401,13 +404,306 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
       throw new BadRequestException('Cannot delete contract with existing bills. Please terminate instead.');
     }
 
-    if (contract.type === ContractType.ROOM && contract.room) {
-      contract.room.status = RoomStatus.VACANT;
-      contract.room.tenantId = null;
-      await this.roomRepository.save(contract.room);
+    // IMPORTANT: Update room status BEFORE deleting contract
+    if (contract.type === ContractType.ROOM && contract.roomId) {
+      const room = await this.roomRepository.findOne({
+        where: { id: contract.roomId }
+      });
+
+      if (room) {
+        room.status = RoomStatus.VACANT;
+        room.tenantId = null;
+        await this.roomRepository.save(room);
+      }
     }
 
-
+    // Now delete the contract
     await this.contractRepository.remove(contract);
+
+    return { message: 'Contract deleted successfully' };
+  }
+
+  async generateContractPdf(contractId: string, res: Response) {
+    const contract = await this.findOne(contractId);
+
+    const owner = contract.room?.owner || contract.motel?.owner;
+    const tenant = contract.tenant;
+    const room = contract.room;
+    const motel = contract.motel;
+
+    if (!owner || !tenant) {
+      throw new BadRequestException('Contract data incomplete');
+    }
+
+    const fonts = {
+      Roboto: {
+        normal: join(process.cwd(), 'src', 'fonts', 'Roboto', 'static', 'Roboto-Regular.ttf'),
+        bold: join(process.cwd(), 'src', 'fonts', 'Roboto', 'static', 'Roboto-Bold.ttf'),
+        italics: join(process.cwd(), 'src', 'fonts', 'Roboto', 'static', 'Roboto-Italic.ttf'),
+        bolditalics: join(process.cwd(), 'src', 'fonts', 'Roboto', 'static', 'Roboto-BoldItalic.ttf'),
+      },
+    };
+
+    const printer = new PdfPrinter(fonts);
+
+    // Helper functions
+    const getFullName = (user: User): string => {
+      if (user.firstName && user.lastName) {
+        return `${user.lastName} ${user.firstName}`;
+      }
+      if (user.firstName) return user.firstName;
+      if (user.lastName) return user.lastName;
+      return user.email.split('@')[0];
+    };
+
+    const formatMoney = (amount: number) => {
+      return amount.toLocaleString('vi-VN') + ' đồng';
+    };
+
+    const formatDate = (date: Date) => {
+      return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+    };
+
+    const numberToWords = (num: number): string => {
+      return `${formatMoney(num)}`;
+    };
+
+    // Calculate dates
+    const today = new Date();
+    const startDate = new Date(contract.startDate);
+    const endDate = new Date(contract.endDate);
+    const durationMonths = Math.round(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+    );
+
+    // Build services list
+    const services: any[] = [];
+    if (contract.electricityCostPerKwh) {
+      services.push({ text: `• Điện sinh hoạt: ${contract.electricityCostPerKwh.toLocaleString('vi-VN')} đồng/kWh` });
+    }
+    if (contract.waterCostPerCubicMeter) {
+      services.push({ text: `• Nước: ${contract.waterCostPerCubicMeter.toLocaleString('vi-VN')} đồng/m³` });
+    }
+    if (contract.hasWifi && contract.internetCost) {
+      services.push({ text: `• Internet/Wifi: ${contract.internetCost.toLocaleString('vi-VN')} đồng/tháng` });
+    }
+    if (contract.hasParking && contract.parkingCost) {
+      services.push({ text: `• Gửi xe: ${contract.parkingCost.toLocaleString('vi-VN')} đồng/tháng` });
+    }
+    if (contract.serviceFee) {
+      services.push({ text: `• Phí dịch vụ (rác, vệ sinh): ${contract.serviceFee.toLocaleString('vi-VN')} đồng/tháng` });
+    }
+
+    if (services.length === 0) {
+      services.push({ text: 'Không có phí dịch vụ phát sinh' });
+    }
+
+    // Prepare rental description
+    let rentalDescription: any[] = [];
+    let address: string;
+    let ownerAddress: string;
+    let allowCooking: boolean = false;
+    let allowPets: boolean = false;
+
+    if (contract.type === ContractType.ROOM && room) {
+      rentalDescription.push({ text: `01 phòng trọ số ${room.number}` });
+      rentalDescription.push({ text: `Diện tích phòng: ${room.area}m²`, margin: [0, 5, 0, 0] });
+      address = owner.phoneNumber || 'Địa chỉ liên hệ với chủ phòng';
+      ownerAddress = owner.phoneNumber || 'Thường trú: (Liên hệ qua số điện thoại)';
+      allowCooking = room.allowCooking || false;
+      allowPets = room.allowPets || false;
+    } else if (motel) {
+      rentalDescription.push({ text: `Toàn bộ nhà trọ ${motel.name}, địa chỉ: ${motel.address}` });
+      rentalDescription.push({ text: `Tổng số phòng: ${motel.totalRooms} phòng`, margin: [0, 5, 0, 0] });
+      address = motel.address;
+      ownerAddress = motel.address;
+      allowCooking = motel.allowCooking || false;
+      allowPets = motel.allowPets || false;
+    } else {
+      rentalDescription.push({ text: 'Thông tin chưa đầy đủ' });
+      address = 'Chưa rõ';
+      ownerAddress = 'Chưa rõ';
+    }
+
+    const contactPhone = contract.type === ContractType.MOTEL && motel
+      ? (motel.contactPhone || owner.phoneNumber || '................................')
+      : (owner.phoneNumber || '................................');
+
+    // Build PDF content
+    const docDefinition: any = {
+      pageSize: 'A4',
+      pageMargins: [50, 50, 50, 50],
+      defaultStyle: {
+        font: 'Roboto',
+        fontSize: 13,
+        lineHeight: 1.3,
+      },
+      content: [
+        // Header
+        {
+          text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',
+          alignment: 'center',
+          bold: true,
+          fontSize: 13,
+        },
+        {
+          text: 'Độc lập - Tự do - Hạnh phúc',
+          alignment: 'center',
+          italics: true,
+          margin: [0, 2, 0, 0],
+        },
+        {
+          canvas: [
+            { type: 'line', x1: 200, y1: 0, x2: 295, y2: 0, lineWidth: 1 },
+          ],
+          margin: [0, 5, 0, 20],
+        },
+
+        // Title
+        {
+          text: `HỢP ĐỒNG THUÊ ${contract.type === ContractType.ROOM ? 'PHÒNG TRỌ' : 'NHÀ TRỌ'}`,
+          alignment: 'center',
+          bold: true,
+          fontSize: 16,
+          margin: [0, 0, 0, 20],
+        },
+
+        // Date and location
+        {
+          text: `Hôm nay, ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}, tại ${address}`,
+          alignment: 'center',
+          margin: [0, 0, 0, 15],
+        },
+
+        {
+          text: 'Chúng tôi ký tên dưới đây gồm có:',
+          margin: [0, 0, 0, 15],
+        },
+
+        // Bên A
+        {
+          text: `BÊN CHO THUÊ ${contract.type === ContractType.ROOM ? 'PHÒNG TRỌ' : 'NHÀ TRỌ'} (gọi tắt là Bên A):`,
+          bold: true,
+          margin: [0, 0, 0, 8],
+        },
+        { text: `Ông/Bà: ${getFullName(owner)}` },
+        { text: `CMND/CCCD số: ${owner.identityCard || '................................'}` },
+        { text: `Thường trú tại: ${ownerAddress}` },
+        { text: `Số điện thoại: ${contactPhone}`, margin: [0, 0, 0, 15] },
+
+        // Bên B
+        {
+          text: `BÊN THUÊ ${contract.type === ContractType.ROOM ? 'PHÒNG TRỌ' : 'NHÀ TRỌ'} (gọi tắt là Bên B):`,
+          bold: true,
+          margin: [0, 0, 0, 8],
+        },
+        { text: `Ông/Bà: ${getFullName(tenant)}` },
+        { text: `CMND/CCCD số: ${tenant.identityCard || '................................'}` },
+        { text: `Số điện thoại: ${tenant.phoneNumber || '................................'}`, margin: [0, 0, 0, 15] },
+
+        {
+          text: 'Sau khi thỏa thuận, hai bên thống nhất như sau:',
+          margin: [0, 0, 0, 15],
+        },
+
+        // Section 1
+        {
+          text: `1. NỘI DUNG THUÊ ${contract.type === ContractType.ROOM ? 'PHÒNG TRỌ' : 'NHÀ TRỌ'}`,
+          bold: true,
+          margin: [0, 0, 0, 8],
+        },
+        {
+          text: `Bên A đồng ý cho Bên B thuê ${contract.type === ContractType.ROOM ? 'phòng trọ' : 'nhà trọ'}:`,
+          margin: [0, 0, 0, 5],
+        },
+        ...rentalDescription,
+        { text: `Thời hạn thuê: ${durationMonths} tháng (từ ngày ${formatDate(startDate)} đến ngày ${formatDate(endDate)})`, margin: [0, 8, 0, 0] },
+        { text: `Giá thuê: ${formatMoney(contract.monthlyRent)}/tháng (Bằng chữ: ${numberToWords(contract.monthlyRent)})` },
+        { text: `Tiền đặt cọc: ${formatMoney(contract.deposit)} (Bằng chữ: ${numberToWords(contract.deposit)})` },
+        { text: `Chu kỳ thanh toán: ${contract.paymentCycleMonths} tháng, thanh toán vào ngày ${contract.paymentDay} hàng tháng`, margin: [0, 0, 0, 15] },
+
+        // Section 2
+        {
+          text: '2. CÁC KHOẢN PHÍ DỊCH VỤ',
+          bold: true,
+          margin: [0, 0, 0, 8],
+        },
+        ...services,
+        { text: '', margin: [0, 0, 0, 15] },
+
+        // Section 3
+        {
+          text: '3. TRÁCH NHIỆM BÊN A (Bên cho thuê)',
+          bold: true,
+          margin: [0, 0, 0, 8],
+        },
+        { text: `• Đảm bảo ${contract.type === ContractType.ROOM ? 'căn phòng' : 'nhà trọ'} cho thuê không có tranh chấp, khiếu kiện.` },
+        { text: `• Đăng ký với chính quyền địa phương về thủ tục cho thuê ${contract.type === ContractType.ROOM ? 'phòng trọ' : 'nhà trọ'}.` },
+        { text: '• Cung cấp đầy đủ các dịch vụ đã cam kết trong hợp đồng.' },
+        { text: '• Thông báo trước ít nhất 30 ngày nếu có thay đổi về giá dịch vụ hoặc nội quy.', margin: [0, 0, 0, 15] },
+
+        // Section 4
+        {
+          text: '4. TRÁCH NHIỆM BÊN B (Bên thuê)',
+          bold: true,
+          margin: [0, 0, 0, 8],
+        },
+        { text: `• Thanh toán tiền thuê ${contract.type === ContractType.ROOM ? 'phòng' : 'nhà trọ'} đầy đủ, đúng hạn vào ngày ${contract.paymentDay} hàng tháng.` },
+        { text: `• Đặt cọc với số tiền ${formatMoney(contract.deposit)} khi ký hợp đồng. Số tiền này sẽ được hoàn trả khi kết thúc hợp đồng nếu không có vi phạm.` },
+        { text: `• Đảm bảo bảo quản các thiết bị ${contract.type === ContractType.ROOM ? 'trong phòng' : 'trong nhà trọ'}. Nếu có hư hỏng do lỗi người sử dụng, Bên B phải sửa chữa hoặc bồi thường.` },
+        { text: `• ${contract.type === ContractType.ROOM ? `Chỉ sử dụng phòng trọ vào mục đích ở với số lượng tối đa không quá ${contract.maxOccupants} người.` : 'Chỉ sử dụng nhà trọ vào mục đích kinh doanh cho thuê phòng trọ hoặc ở.'}` },
+        { text: '• Không chứa, tàng trữ các chất cháy nổ, hàng cấm, chất gây nghiện.' },
+        { text: '• Giữ gìn an ninh trật tự, vệ sinh chung, nếp sống văn hóa đô thị.' },
+        { text: `• ${allowCooking ? 'Được phép nấu ăn trong phòng nhưng phải đảm bảo vệ sinh và an toàn phòng cháy chữa cháy.' : 'Không được nấu ăn trong phòng.'}` },
+        { text: `• ${allowPets ? 'Được phép nuôi thú cưng nhưng phải đảm bảo vệ sinh và không gây ảnh hưởng đến người khác.' : 'Không được nuôi thú cưng.'}`, margin: [0, 0, 0, 15] },
+
+        // Section 5
+        {
+          text: '5. ĐIỀU KHOẢN THỰC HIỆN',
+          bold: true,
+          margin: [0, 0, 0, 8],
+        },
+        { text: '• Hai bên cam kết thực hiện đúng các điều khoản đã thỏa thuận.' },
+        { text: '• Nếu một trong hai bên muốn chấm dứt hợp đồng trước thời hạn phải báo trước cho bên kia ít nhất 30 ngày.' },
+        { text: '• Nếu Bên B vi phạm hợp đồng (nợ tiền thuê quá 2 tháng, vi phạm nội quy nghiêm trọng...), Bên A có quyền đơn phương chấm dứt hợp đồng và không hoàn trả tiền đặt cọc.' },
+        { text: '• Hợp đồng có hiệu lực kể từ ngày ký.' },
+        { text: '• Hợp đồng được lập thành 02 bản, mỗi bên giữ 01 bản có giá trị pháp lý như nhau.', margin: [0, 0, 0, 30] },
+
+        // Signatures
+        {
+          columns: [
+            {
+              width: '*',
+              alignment: 'center',
+              stack: [
+                { text: 'ĐẠI DIỆN BÊN A', bold: true, margin: [0, 0, 0, 5] },
+                { text: '(Ký và ghi rõ họ tên)', italics: true, fontSize: 11, margin: [0, 0, 0, 60] },
+                { text: getFullName(owner), bold: true },
+              ],
+            },
+            {
+              width: '*',
+              alignment: 'center',
+              stack: [
+                { text: 'ĐẠI DIỆN BÊN B', bold: true, margin: [0, 0, 0, 5] },
+                { text: '(Ký và ghi rõ họ tên)', italics: true, fontSize: 11, margin: [0, 0, 0, 60] },
+                { text: getFullName(tenant), bold: true },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+
+    const pdfDoc = printer.createPdfKitDocument(docDefinition);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename=contract-${contract.id}.pdf`,
+    );
+
+    pdfDoc.pipe(res);
+    pdfDoc.end();
   }
 }

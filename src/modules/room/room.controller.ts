@@ -1,13 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Put, 
-  Delete, 
-  Body, 
-  Param, 
-  UseGuards, 
-  Req 
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { RoomService } from './room.service';
 import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
@@ -22,6 +22,7 @@ export class RoomController {
   constructor(private readonly roomService: RoomService) {}
 
   // PUBLIC ROUTES
+
   @Get()
   findAll() {
     return this.roomService.findAll();
@@ -32,25 +33,27 @@ export class RoomController {
     return this.roomService.findVacant();
   }
 
+  // Route tĩnh phải đặt TRƯỚC route động
+  @Get('my-rooms')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.LANDLORD, UserRole.ADMIN)
+  findMyRooms(@Req() req) {
+    return this.roomService.findMyRooms(req.user.id);
+  }
+
+  // Route động – đặt SAU các route tĩnh
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.roomService.findOne(id);
   }
 
   // PROTECTED ROUTES
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
   create(@Body() createRoomDto: CreateRoomDto, @Req() req) {
-    // Gán ownerId từ user đăng nhập
     return this.roomService.create(createRoomDto, req.user.id);
-  }
-
-  @Get('my-rooms')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.LANDLORD, UserRole.ADMIN)
-  findMyRooms(@Req() req) {
-    return this.roomService.findMyRooms(req.user.id);
   }
 
   @Put(':id')
@@ -67,10 +70,7 @@ export class RoomController {
   @Put(':id/status')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
-  updateStatus(
-    @Param('id') id: string,
-    @Body('status') status: RoomStatus,
-  ) {
+  updateStatus(@Param('id') id: string, @Body('status') status: RoomStatus) {
     return this.roomService.updateStatus(id, status);
   }
 

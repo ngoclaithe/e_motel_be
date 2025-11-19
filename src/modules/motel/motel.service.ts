@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between, MoreThanOrEqual, LessThanOrEqual } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { Motel, AlleyType, SecurityType } from './entities/motel.entity';
 import { Image } from '../image/entities/image.entity';
 import { CreateMotelDto, UpdateMotelDto, FilterMotelDto } from './dto/motel.dto';
@@ -33,7 +38,7 @@ export class MotelService {
   }
 
   private validateImageUrls(urls: string[]): void {
-    const invalidUrls = urls.filter(url => !this.isValidUrl(url));
+    const invalidUrls = urls.filter((url) => !this.isValidUrl(url));
     if (invalidUrls.length > 0) {
       throw new BadRequestException(`Invalid image URLs: ${invalidUrls.join(', ')}`);
     }
@@ -54,11 +59,11 @@ export class MotelService {
     const savedMotel = await this.motelRepository.save(motel);
 
     if (images && images.length > 0) {
-      const imageEntities = images.map(url => 
+      const imageEntities = images.map((url) =>
         this.imageRepository.create({
           url,
           motelId: savedMotel.id,
-        })
+        }),
       );
       await this.imageRepository.save(imageEntities);
     }
@@ -84,55 +89,26 @@ export class MotelService {
       sortOrder = 'DESC',
     } = filterDto || {};
 
-    const where: any = {};
-
-    if (search) {
-      where.name = Like(`%${search}%`);
-    }
-
-    if (alleyType) {
-      where.alleyType = alleyType;
-    }
-
-    if (securityType) {
-      where.securityType = securityType;
-    }
-
-    if (hasWifi !== undefined) {
-      where.hasWifi = hasWifi;
-    }
-    if (hasParking !== undefined) {
-      where.hasParking = hasParking;
-    }
-    if (hasElevator !== undefined) {
-      where.hasElevator = hasElevator;
-    }
-    if (allowPets !== undefined) {
-      where.allowPets = allowPets;
-    }
-    if (allowCooking !== undefined) {
-      where.allowCooking = allowCooking;
-    }
-
     const queryBuilder = this.motelRepository
       .createQueryBuilder('motel')
       .leftJoinAndSelect('motel.owner', 'owner')
-      .leftJoinAndSelect('motel.rooms', 'rooms')
       .leftJoinAndSelect('motel.images', 'images');
 
     if (search) {
       queryBuilder.where(
         '(motel.name LIKE :search OR motel.address LIKE :search OR motel.description LIKE :search)',
-        { search: `%${search}%` }
+        { search: `%${search}%` },
       );
     }
 
     if (alleyType) {
       queryBuilder.andWhere('motel.alleyType = :alleyType', { alleyType });
     }
+
     if (securityType) {
       queryBuilder.andWhere('motel.securityType = :securityType', { securityType });
     }
+
     if (hasWifi !== undefined) {
       queryBuilder.andWhere('motel.hasWifi = :hasWifi', { hasWifi });
     }
@@ -149,18 +125,22 @@ export class MotelService {
       queryBuilder.andWhere('motel.allowCooking = :allowCooking', { allowCooking });
     }
 
+    // ✅ Filter theo giá dựa trên Motel.monthlyRent thay vì rooms.price
     if (minPrice !== undefined || maxPrice !== undefined) {
-      queryBuilder.andWhere('rooms.price IS NOT NULL');
+      queryBuilder.andWhere('motel.monthlyRent IS NOT NULL');
+
       if (minPrice !== undefined) {
-        queryBuilder.andWhere('rooms.price >= :minPrice', { minPrice });
+        queryBuilder.andWhere('motel.monthlyRent >= :minPrice', { minPrice });
       }
       if (maxPrice !== undefined) {
-        queryBuilder.andWhere('rooms.price <= :maxPrice', { maxPrice });
+        queryBuilder.andWhere('motel.monthlyRent <= :maxPrice', { maxPrice });
       }
     }
 
-    const validSortFields = ['createdAt', 'updatedAt', 'name', 'totalRooms'];
+    // totalRooms là column trên Motel nên vẫn sort bình thường
+    const validSortFields = ['createdAt', 'updatedAt', 'name', 'totalRooms', 'monthlyRent'];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+
     queryBuilder.orderBy(`motel.${sortField}`, sortOrder === 'ASC' ? 'ASC' : 'DESC');
 
     const total = await queryBuilder.getCount();
@@ -182,7 +162,7 @@ export class MotelService {
   async findOne(id: string): Promise<Motel> {
     const motel = await this.motelRepository.findOne({
       where: { id },
-      relations: ['owner', 'rooms', 'images'],
+      relations: ['owner', 'images'],
     });
 
     if (!motel) {
@@ -217,11 +197,11 @@ export class MotelService {
       await this.imageRepository.delete({ motelId: id });
 
       if (images.length > 0) {
-        const imageEntities = images.map(url =>
+        const imageEntities = images.map((url) =>
           this.imageRepository.create({
             url,
             motelId: id,
-          })
+          }),
         );
         await this.imageRepository.save(imageEntities);
       }
@@ -245,7 +225,7 @@ export class MotelService {
   async findByOwner(ownerId: string): Promise<Motel[]> {
     return this.motelRepository.find({
       where: { ownerId },
-      relations: ['rooms', 'images'],
+      relations: ['images'],
       order: {
         createdAt: 'DESC',
       },

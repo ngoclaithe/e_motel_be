@@ -1,10 +1,14 @@
-import { Controller, Post, Get, Put, Delete, Body, Param, UseGuards, Req } from '@nestjs/common';
+import { 
+  Controller, Post, Get, Put, Delete, Body, Param, 
+  UseGuards, Req, Res
+} from '@nestjs/common';
 import { ContractService } from './contract.service';
 import { CreateContractDto, UpdateContractDto } from './dto/contract.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../user/entities/user.entity';
+import { Response } from 'express';
 
 @Controller('contracts')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,5 +41,10 @@ export class ContractController {
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
   remove(@Param('id') id: string, @Req() req) {
     return this.contractService.remove(id, req.user.id, req.user.role);
+  }
+
+  @Get(':id/download')
+  download(@Param('id') id: string, @Res() res: Response) {
+    return this.contractService.generateContractPdf(id, res);
   }
 }
