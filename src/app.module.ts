@@ -10,6 +10,7 @@ import { BillModule } from './modules/bill/bill.module';
 import { FeedbackModule } from './modules/feedback/feedback.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { MailModule } from './modules/mail/mail.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { MailModule } from './modules/mail/mail.module';
     FeedbackModule,
     CloudinaryModule,
     MailModule,
+    NotificationModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }

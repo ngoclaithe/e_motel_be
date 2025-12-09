@@ -11,7 +11,7 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   async findAll(): Promise<User[]> {
     return this.userRepository.find();
@@ -76,6 +76,12 @@ export class UserService {
     return this.userRepository.find({
       where: { role: UserRole.TENANT },
       relations: ['rentedRooms', 'contracts'],
+    });
+  }
+
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { email },
     });
   }
 
