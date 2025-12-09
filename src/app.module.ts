@@ -11,6 +11,7 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
 import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { FaceVerificationModule } from './modules/face-verification/face-verification.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     CloudinaryModule,
     MailModule,
     NotificationModule,
+    FaceVerificationModule,
   ],
 })
 export class AppModule { }

@@ -46,8 +46,20 @@ export class User {
   @Column({ nullable: true })
   address: string;
 
+  @Column({ nullable: true })
+  bankName: string;
+
+  @Column({ nullable: true })
+  bankCode: string;
+
+  @Column({ nullable: true })
+  bankAccountNumber: string;
+
   @Column({ default: false })
   isVerified: boolean;
+
+  @Column({ default: false })
+  isVerifiedIdentity: boolean;
 
   @Column({ nullable: true })
   refreshToken: string;

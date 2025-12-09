@@ -43,7 +43,7 @@ export class BillService {
 
   async findAll(user?: any) {
     const bills = await this.billRepository.find({
-      relations: ['contract', 'contract.tenant']
+      relations: ['contract', 'contract.tenant', 'contract.room', 'contract.room.owner', 'contract.motel', 'contract.motel.owner']
     });
 
     // If tenant, only return bills for contracts where they are the tenant
