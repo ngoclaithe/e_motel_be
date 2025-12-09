@@ -9,7 +9,7 @@ import { UserRole } from '../user/entities/user.entity';
 @Controller('feedbacks')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FeedbackController {
-  constructor(private readonly feedbackService: FeedbackService) {}
+  constructor(private readonly feedbackService: FeedbackService) { }
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.TENANT)
@@ -18,7 +18,7 @@ export class FeedbackController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.LANDLORD)
+  @Roles(UserRole.ADMIN, UserRole.LANDLORD, UserRole.TENANT)
   findAll() {
     return this.feedbackService.findAll();
   }

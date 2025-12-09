@@ -18,7 +18,7 @@ export class RoomService {
     private readonly roomRepository: Repository<Room>,
     @InjectRepository(Image)
     private readonly imageRepository: Repository<Image>,
-  ) {}
+  ) { }
 
   // Kiểm tra URL hợp lệ
   private isValidUrl(url: string): boolean {
@@ -48,7 +48,7 @@ export class RoomService {
 
     const room = this.roomRepository.create({
       ...roomData,
-      ownerId, 
+      ownerId,
       status: RoomStatus.VACANT,
     });
 
@@ -150,15 +150,27 @@ export class RoomService {
     });
   }
 
-  // Tìm phòng theo chủ sở hữu
-  async findMyRooms(ownerId: string): Promise<Room[]> {
-    console.log('findMyRooms() called with ownerId:', ownerId);
+  // Tìm phòng theo user (landlord: ownerId, tenant: tenantId)
+  async findMyRooms(userId: string, userRole?: string): Promise<Room[]> {
+    console.log('findMyRooms() called with userId:', userId, 'role:', userRole);
 
-    const rooms = await this.roomRepository.find({
-      where: { ownerId },
-      relations: ['tenant', 'images', 'contracts', 'feedbacks'],
-      order: { createdAt: 'DESC' },
-    });
+    let rooms: Room[];
+
+    if (userRole === 'TENANT') {
+      // Tenant: tìm rooms mà họ đang thuê
+      rooms = await this.roomRepository.find({
+        where: { tenantId: userId },
+        relations: ['owner', 'tenant', 'images', 'contracts', 'feedbacks'],
+        order: { createdAt: 'DESC' },
+      });
+    } else {
+      // Landlord/Admin: tìm rooms mà họ sở hữu
+      rooms = await this.roomRepository.find({
+        where: { ownerId: userId },
+        relations: ['tenant', 'images', 'contracts', 'feedbacks'],
+        order: { createdAt: 'DESC' },
+      });
+    }
 
     console.log('Rooms found:', rooms.length);
     return rooms;

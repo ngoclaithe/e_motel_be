@@ -19,7 +19,7 @@ import { RoomStatus } from './entities/room.entity';
 
 @Controller('rooms')
 export class RoomController {
-  constructor(private readonly roomService: RoomService) {}
+  constructor(private readonly roomService: RoomService) { }
 
   // PUBLIC ROUTES
 
@@ -36,9 +36,9 @@ export class RoomController {
   // Route tĩnh phải đặt TRƯỚC route động
   @Get('my-rooms')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.LANDLORD, UserRole.ADMIN)
+  @Roles(UserRole.LANDLORD, UserRole.ADMIN, UserRole.TENANT)
   findMyRooms(@Req() req) {
-    return this.roomService.findMyRooms(req.user.id);
+    return this.roomService.findMyRooms(req.user.id, req.user.role);
   }
 
   // Route động – đặt SAU các route tĩnh

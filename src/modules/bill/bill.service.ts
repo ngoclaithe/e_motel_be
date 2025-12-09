@@ -14,7 +14,7 @@ export class BillService {
     @InjectRepository(Contract)
     private readonly contractRepository: Repository<Contract>,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   async create(dto: CreateBillDto) {
     const contract = await this.contractRepository.findOne({ where: { id: dto.contractId }, relations: ['tenant'] });
@@ -41,8 +41,18 @@ export class BillService {
     return saved;
   }
 
-  async findAll() {
-    return this.billRepository.find({ relations: ['contract'] });
+  async findAll(user?: any) {
+    const bills = await this.billRepository.find({
+      relations: ['contract', 'contract.tenant']
+    });
+
+    // If tenant, only return bills for contracts where they are the tenant
+    if (user && user.role === 'TENANT') {
+      return bills.filter(bill => bill.contract?.tenantId === user.id);
+    }
+
+    // Admin and Landlord see all bills
+    return bills;
   }
 
   async findOne(id: string) {

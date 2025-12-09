@@ -1,12 +1,32 @@
+import { IsString, IsNumber, IsOptional, IsDateString } from 'class-validator';
+
 export class CreateBillDto {
+  @IsString()
   contractId: string;
+
+  @IsDateString()
   month: Date;
+
+  @IsNumber()
   electricityStart: number;
+
+  @IsNumber()
   electricityEnd: number;
+
+  @IsNumber()
   waterStart: number;
+
+  @IsNumber()
   waterEnd: number;
+
+  @IsNumber()
   electricityRate: number;
+
+  @IsNumber()
   waterRate: number;
+
+  @IsNumber()
+  @IsOptional()
   otherFees?: number;
 }
 

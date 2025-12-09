@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Put, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Put, Param, Body, UseGuards, Req } from '@nestjs/common';
 import { BillService } from './bill.service';
 import { CreateBillDto, UpdateBillDto } from './dto/bill.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -9,7 +9,7 @@ import { UserRole } from '../user/entities/user.entity';
 @Controller('bills')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BillController {
-  constructor(private readonly billService: BillService) {}
+  constructor(private readonly billService: BillService) { }
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
@@ -18,9 +18,9 @@ export class BillController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.LANDLORD)
-  findAll() {
-    return this.billService.findAll();
+  @Roles(UserRole.ADMIN, UserRole.LANDLORD, UserRole.TENANT)
+  findAll(@Req() req) {
+    return this.billService.findAll(req.user);
   }
 
   @Get(':id')
