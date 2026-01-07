@@ -10,7 +10,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: 'http://localhost:3000',
+    origin: 'https://e-motel-fe.vercel.app',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -29,7 +29,7 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ConsoleLogInterceptor());
 
-  await app.listen(8000);
-  console.log(`🚀 Server đang chạy tại http://localhost:8000`);
+  await app.listen(8002);
+  console.log(`🚀 Server đang chạy tại http://localhost:8002`);
 }
 bootstrap();
