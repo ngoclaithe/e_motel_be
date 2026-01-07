@@ -1,4 +1,5 @@
-import { Controller, Post, Body, UseGuards, Req, Get, Param, Headers } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req, Get, Param, Headers, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto, RefreshTokenDto } from './dto/auth.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -13,8 +14,25 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
+    const tokens = await this.authService.login(loginDto);
+
+    // Set httpOnly cookies
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1 * 60 * 60 * 1000, // 1 hour
+    });
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return { message: 'Login successful' };
   }
 
   @Post('forgot-password')
@@ -35,14 +53,41 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(@Req() req) {
+  async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
+    // Clear cookies
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+
     return this.authService.logout(req.user.id);
   }
 
   // Refresh token endpoint - does not require access token
   @Post('refresh')
-  async refresh(@Body() body: RefreshTokenDto) {
-    return this.authService.refreshWithToken(body.refreshToken);
+  async refresh(@Req() req, @Res({ passthrough: true }) res: Response) {
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      throw new Error('No refresh token provided');
+    }
+
+    const tokens = await this.authService.refreshWithToken(refreshToken);
+
+    // Set new httpOnly cookies
+    res.cookie('accessToken', tokens.accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1 * 60 * 60 * 1000, // 1 hour
+    });
+
+    res.cookie('refreshToken', tokens.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    return { message: 'Token refreshed successfully' };
   }
 
   @Get('verify/:token')
