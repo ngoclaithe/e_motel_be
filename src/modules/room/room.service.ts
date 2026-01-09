@@ -152,29 +152,27 @@ export class RoomService {
 
   // Tìm phòng theo user (landlord: ownerId, tenant: tenantId)
   async findMyRooms(userId: string, userRole?: string, status?: RoomStatus): Promise<Room[]> {
-    let rooms: Room[];
+    const query = this.roomRepository.createQueryBuilder('room');
 
     if (userRole === 'TENANT') {
-      // Tenant: tìm rooms mà họ đang thuê
-      const where: any = { tenantId: userId };
-      if (status) where.status = status;
-      rooms = await this.roomRepository.find({
-        where,
-        relations: ['owner', 'tenant', 'images', 'contracts', 'feedbacks'],
-        order: { createdAt: 'DESC' },
-      });
+      query.where('room.tenantId = :userId', { userId });
+      query.leftJoinAndSelect('room.owner', 'owner');
+      query.leftJoinAndSelect('room.tenant', 'tenant');
     } else {
-      // Landlord/Admin: tìm rooms mà họ sở hữu
-      const where: any = { ownerId: userId };
-      if (status) where.status = status;
-      rooms = await this.roomRepository.find({
-        where,
-        relations: ['tenant', 'images', 'contracts', 'feedbacks'],
-        order: { createdAt: 'DESC' },
-      });
+      query.where('room.ownerId = :userId', { userId });
+      query.leftJoinAndSelect('room.tenant', 'tenant');
     }
 
-    return rooms;
+    if (status) {
+      query.andWhere('room.status = :status', { status });
+    }
+
+    query.leftJoinAndSelect('room.images', 'images');
+    query.leftJoinAndSelect('room.contracts', 'contracts');
+    query.leftJoinAndSelect('room.feedbacks', 'feedbacks');
+    query.orderBy('room.createdAt', 'DESC');
+
+    return query.getMany();
   }
 
   // Cập nhật trạng thái phòng
