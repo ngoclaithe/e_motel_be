@@ -151,28 +151,29 @@ export class RoomService {
   }
 
   // Tìm phòng theo user (landlord: ownerId, tenant: tenantId)
-  async findMyRooms(userId: string, userRole?: string): Promise<Room[]> {
-    console.log('findMyRooms() called with userId:', userId, 'role:', userRole);
-
+  async findMyRooms(userId: string, userRole?: string, status?: RoomStatus): Promise<Room[]> {
     let rooms: Room[];
 
     if (userRole === 'TENANT') {
       // Tenant: tìm rooms mà họ đang thuê
+      const where: any = { tenantId: userId };
+      if (status) where.status = status;
       rooms = await this.roomRepository.find({
-        where: { tenantId: userId },
+        where,
         relations: ['owner', 'tenant', 'images', 'contracts', 'feedbacks'],
         order: { createdAt: 'DESC' },
       });
     } else {
       // Landlord/Admin: tìm rooms mà họ sở hữu
+      const where: any = { ownerId: userId };
+      if (status) where.status = status;
       rooms = await this.roomRepository.find({
-        where: { ownerId: userId },
+        where,
         relations: ['tenant', 'images', 'contracts', 'feedbacks'],
         order: { createdAt: 'DESC' },
       });
     }
 
-    console.log('Rooms found:', rooms.length);
     return rooms;
   }
 

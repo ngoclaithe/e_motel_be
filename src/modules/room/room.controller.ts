@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Req,
 } from '@nestjs/common';
@@ -37,8 +38,8 @@ export class RoomController {
   @Get('my-rooms')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.LANDLORD, UserRole.ADMIN, UserRole.TENANT)
-  findMyRooms(@Req() req) {
-    return this.roomService.findMyRooms(req.user.id, req.user.role);
+  findMyRooms(@Req() req, @Query('status') status?: RoomStatus) {
+    return this.roomService.findMyRooms(req.user.id, req.user.role, status);
   }
 
   // Route động – đặt SAU các route tĩnh
