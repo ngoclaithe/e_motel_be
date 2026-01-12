@@ -11,6 +11,7 @@ import {
   Req,
 } from '@nestjs/common';
 import { RoomService } from './room.service';
+import { SearchRoomDto } from './dto/search-room.dto';
 import { CreateRoomDto, UpdateRoomDto } from './dto/room.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -23,6 +24,11 @@ export class RoomController {
   constructor(private readonly roomService: RoomService) { }
 
   // PUBLIC ROUTES
+
+  @Get('public/search')
+  searchPublic(@Query() query: SearchRoomDto) {
+    return this.roomService.searchPublic(query);
+  }
 
   @Get()
   findAll() {
@@ -43,6 +49,11 @@ export class RoomController {
   }
 
   // Route động – đặt SAU các route tĩnh
+  @Get('s/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.roomService.findBySlug(slug);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.roomService.findOne(id);

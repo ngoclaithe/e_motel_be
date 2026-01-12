@@ -1,5 +1,5 @@
-import { 
-  Controller, Post, Get, Put, Delete, Body, Param, 
+import {
+  Controller, Post, Get, Put, Delete, Body, Param,
   UseGuards, Req, Res
 } from '@nestjs/common';
 import { ContractService } from './contract.service';
@@ -13,7 +13,7 @@ import { Response } from 'express';
 @Controller('contracts')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ContractController {
-  constructor(private readonly contractService: ContractService) {}
+  constructor(private readonly contractService: ContractService) { }
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.LANDLORD)
@@ -22,8 +22,8 @@ export class ContractController {
   }
 
   @Get()
-  findAll() {
-    return this.contractService.findAll();
+  findAll(@Req() req) {
+    return this.contractService.findAll(req.user);
   }
 
   @Get(':id')
@@ -37,8 +37,20 @@ export class ContractController {
     return this.contractService.update(id, req.user.id, req.user.role, dto);
   }
 
+  @Post(':id/approve')
+  @Roles(UserRole.TENANT)
+  approve(@Param('id') id: string, @Req() req) {
+    return this.contractService.approve(id, req.user.id);
+  }
+
+  @Post(':id/terminate')
+  @Roles(UserRole.ADMIN, UserRole.LANDLORD, UserRole.TENANT)
+  terminate(@Param('id') id: string, @Req() req) {
+    return this.contractService.terminate(id, req.user.id, req.user.role);
+  }
+
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.LANDLORD)
+  @Roles(UserRole.ADMIN)
   remove(@Param('id') id: string, @Req() req) {
     return this.contractService.remove(id, req.user.id, req.user.role);
   }

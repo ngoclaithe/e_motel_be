@@ -1,9 +1,9 @@
-import { 
-  IsString, 
-  IsNotEmpty, 
-  IsOptional, 
-  IsNumber, 
-  IsArray, 
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsArray,
   IsUrl,
   IsEnum,
   IsBoolean,
@@ -11,7 +11,7 @@ import {
   Min,
   Max,
   MaxLength,
-  ArrayMaxSize 
+  ArrayMaxSize
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { RoomStatus, BathroomType, FurnishingStatus } from '../entities/room.entity';
@@ -21,6 +21,11 @@ export class CreateRoomDto {
   @IsNotEmpty({ message: 'Room number is required' })
   @MaxLength(50, { message: 'Room number must not exceed 50 characters' })
   number: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  address?: string;
 
   @IsNumber()
   @IsNotEmpty({ message: 'Area is required' })
@@ -86,7 +91,18 @@ export class CreateRoomDto {
 
   @IsBoolean()
   @IsOptional()
+  @Type(() => Boolean)
   hasWifi?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  hasFan?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  hasKitchenTable?: boolean;
 
   // Capacity & Restrictions
   @IsNumber()
@@ -175,6 +191,36 @@ export class CreateRoomDto {
   @IsOptional()
   availableFrom?: Date;
 
+  // Equipment Management (Quản lý thiết bị - tùy chọn)
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  airConditionerCount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  fanCount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  waterHeaterCount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  lightBulbCount?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(1000)
+  otherEquipment?: string;
+
   // Images
   @IsArray()
   @IsOptional()
@@ -188,6 +234,11 @@ export class UpdateRoomDto {
   @IsOptional()
   @MaxLength(50, { message: 'Room number must not exceed 50 characters' })
   number?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(500)
+  address?: string;
 
   @IsNumber()
   @IsOptional()
@@ -261,7 +312,18 @@ export class UpdateRoomDto {
 
   @IsBoolean()
   @IsOptional()
+  @Type(() => Boolean)
   hasWifi?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  hasFan?: boolean;
+
+  @IsBoolean()
+  @IsOptional()
+  @Type(() => Boolean)
+  hasKitchenTable?: boolean;
 
   // Capacity & Restrictions
   @IsNumber()
@@ -349,6 +411,36 @@ export class UpdateRoomDto {
   @IsDateString()
   @IsOptional()
   availableFrom?: Date;
+
+  // Equipment Management (Quản lý thiết bị - tùy chọn)
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  airConditionerCount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  fanCount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  waterHeaterCount?: number;
+
+  @IsNumber()
+  @IsOptional()
+  @Min(0)
+  @Type(() => Number)
+  lightBulbCount?: number;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(1000)
+  otherEquipment?: string;
 
   // Images
   @IsArray()

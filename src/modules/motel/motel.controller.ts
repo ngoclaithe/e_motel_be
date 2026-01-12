@@ -8,7 +8,7 @@ import { UserRole } from '../user/entities/user.entity';
 
 @Controller('motels')
 export class MotelController {
-  constructor(private readonly motelService: MotelService) {}
+  constructor(private readonly motelService: MotelService) { }
 
   // PUBLIC ROUTES - Không cần token
   @Get()
@@ -29,6 +29,11 @@ export class MotelController {
   @Roles(UserRole.LANDLORD, UserRole.ADMIN)
   findMyMotels(@Req() req) {
     return this.motelService.findByOwner(req.user.id);
+  }
+
+  @Get('s/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.motelService.findBySlug(slug);
   }
 
   @Get(':id')

@@ -12,6 +12,7 @@ import { CloudinaryModule } from './modules/cloudinary/cloudinary.module';
 import { MailModule } from './modules/mail/mail.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { FaceVerificationModule } from './modules/face-verification/face-verification.module';
+import { StatisticsModule } from './modules/statistics/statistics.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { FaceVerificationModule } from './modules/face-verification/face-verific
     MailModule,
     NotificationModule,
     FaceVerificationModule,
+    StatisticsModule,
   ],
 })
 export class AppModule { }

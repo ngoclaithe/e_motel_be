@@ -38,6 +38,12 @@ export class Room {
   @Column()
   number: string;
 
+  @Column({ unique: true, nullable: true })
+  slug: string;
+
+  @Column({ nullable: true })
+  address: string;
+
   @Column('float')
   area: number;
 
@@ -79,6 +85,8 @@ export class Room {
   @Column({ default: false }) hasBed: boolean;
   @Column({ default: false }) hasDesk: boolean;
   @Column({ default: false }) hasWifi: boolean;
+  @Column({ default: false }) hasFan: boolean;
+  @Column({ default: false }) hasKitchenTable: boolean;
 
   // Capacity & Restrictions
   @Column({ type: 'int', default: 2 })
@@ -107,6 +115,22 @@ export class Room {
 
   @Column({ type: 'float', nullable: true, default: 0 })
   serviceFee: number;
+
+  // Equipment Management (Optional - Quản lý thiết bị)
+  @Column({ type: 'int', default: 0 })
+  airConditionerCount: number;
+
+  @Column({ type: 'int', default: 0 })
+  fanCount: number;
+
+  @Column({ type: 'int', default: 0 })
+  waterHeaterCount: number;
+
+  @Column({ type: 'int', default: 0 })
+  lightBulbCount: number;
+
+  @Column({ type: 'text', nullable: true })
+  otherEquipment: string; // JSON string for flexible equipment list
 
   // Payment Terms
   @Column({ type: 'int', nullable: true, default: 1 })

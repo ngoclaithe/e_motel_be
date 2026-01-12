@@ -10,6 +10,7 @@ import { Motel, AlleyType, SecurityType } from './entities/motel.entity';
 import { Image } from '../image/entities/image.entity';
 import { CreateMotelDto, UpdateMotelDto, FilterMotelDto } from './dto/motel.dto';
 import { UserRole } from '../user/entities/user.entity';
+import slugify from 'slugify';
 
 export interface PaginatedResult<T> {
   data: T[];
@@ -26,7 +27,7 @@ export class MotelService {
     private readonly motelRepository: Repository<Motel>,
     @InjectRepository(Image)
     private readonly imageRepository: Repository<Image>,
-  ) {}
+  ) { }
 
   private isValidUrl(url: string): boolean {
     try {
@@ -44,6 +45,10 @@ export class MotelService {
     }
   }
 
+  private generateSlug(text: string): string {
+    return slugify(text, { lower: true, locale: 'vi', strict: true }) + '-' + Math.random().toString(36).substring(2, 7);
+  }
+
   async create(userId: string, createMotelDto: CreateMotelDto): Promise<Motel> {
     const { images, ...motelData } = createMotelDto;
 
@@ -54,6 +59,7 @@ export class MotelService {
     const motel = this.motelRepository.create({
       ...motelData,
       ownerId: userId,
+      slug: this.generateSlug(motelData.name),
     });
 
     const savedMotel = await this.motelRepository.save(motel);
@@ -170,6 +176,38 @@ export class MotelService {
     return motel;
   }
 
+  async findBySlug(slug: string): Promise<Motel> {
+    let motel = await this.motelRepository.findOne({
+      where: { slug },
+      relations: ['owner', 'images'],
+    });
+
+    if (!motel) {
+      // Kiểm tra nếu slug truyền vào có định dạng UUID thì tìm theo ID
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
+
+      try {
+        if (isUuid) {
+          motel = await this.findOne(slug);
+        } else {
+          // Thử tìm theo ID nếu k phải UUID (dữ liệu cũ khác)
+          motel = await this.motelRepository.findOne({
+            where: { id: slug as any },
+            relations: ['owner', 'images'],
+          });
+        }
+      } catch (e) {
+        throw new NotFoundException(`Motel with slug or ID ${slug} not found`);
+      }
+    }
+
+    if (!motel) {
+      throw new NotFoundException(`Motel with slug or ID ${slug} not found`);
+    }
+
+    return motel;
+  }
+
   async update(
     id: string,
     userId: string,
@@ -183,6 +221,10 @@ export class MotelService {
     }
 
     const { images, ...motelData } = updateMotelDto;
+
+    if (motelData.name && motelData.name !== motel.name) {
+      motel.slug = this.generateSlug(motelData.name);
+    }
 
     Object.assign(motel, motelData);
     await this.motelRepository.save(motel);
@@ -223,7 +265,7 @@ export class MotelService {
   async findByOwner(ownerId: string): Promise<Motel[]> {
     return this.motelRepository.find({
       where: { ownerId },
-      relations: ['images'],
+      relations: ['images', 'owner'],
       order: {
         createdAt: 'DESC',
       },

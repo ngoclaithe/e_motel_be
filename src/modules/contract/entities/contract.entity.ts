@@ -6,6 +6,7 @@ import { Bill } from '../../bill/entities/bill.entity';
 
 export enum ContractStatus {
   ACTIVE = 'ACTIVE',
+  PENDING_TENANT = 'PENDING_TENANT',
   EXPIRED = 'EXPIRED',
   TERMINATED = 'TERMINATED'
 }
@@ -33,7 +34,7 @@ export class Contract {
   @Column({ type: 'timestamp' })
   endDate: Date;
 
-  @Column({ type: 'float', nullable: true }) 
+  @Column({ type: 'float', nullable: true })
   monthlyRent: number;
 
   @Column('float')
@@ -81,7 +82,7 @@ export class Contract {
   @Column({
     type: 'enum',
     enum: ContractStatus,
-    default: ContractStatus.ACTIVE
+    default: ContractStatus.PENDING_TENANT
   })
   status: ContractStatus;
 
@@ -100,14 +101,14 @@ export class Contract {
   @Column({ nullable: true })
   roomId: string;
 
-  @ManyToOne(() => Room, { nullable: true }) 
+  @ManyToOne(() => Room, { nullable: true })
   @JoinColumn({ name: 'roomId' })
   room: Room;
 
   @Column({ nullable: true })
   motelId: string;
 
-  @ManyToOne(() => Motel, { nullable: true }) 
+  @ManyToOne(() => Motel, { nullable: true })
   @JoinColumn({ name: 'motelId' })
   motel: Motel;
 

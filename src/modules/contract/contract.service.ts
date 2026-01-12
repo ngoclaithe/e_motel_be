@@ -116,7 +116,7 @@ export class ContractService {
       // Additional info
       specialTerms: createDto.specialTerms,
       regulations: motel?.regulations,
-      status: ContractStatus.ACTIVE,
+      status: ContractStatus.PENDING_TENANT,
     };
 
     const contract = this.contractRepository.create(contractData);
@@ -127,13 +127,49 @@ export class ContractService {
     // Save contract
     const savedContract = await this.contractRepository.save(contract);
 
-    // Update status
-    if (createDto.type === ContractType.ROOM && room) {
-      room.status = RoomStatus.OCCUPIED;
-      room.tenantId = createDto.tenantId;
-      await this.roomRepository.save(room);
-    } else if (createDto.type === ContractType.MOTEL && motel) {
+    // NOTE: Room status is NOT updated to OCCUPIED until tenant approves
 
+    return savedContract;
+  }
+
+  async approve(id: string, userId: string) {
+    const contract = await this.contractRepository.findOne({
+      where: { id },
+      relations: ['tenant', 'room', 'motel']
+    });
+
+    if (!contract) {
+      throw new NotFoundException('Contract not found');
+    }
+
+    // Debug logging
+    console.log('🔍 Approve Debug:');
+    console.log('  - userId from JWT:', userId);
+    console.log('  - contract.tenantId:', contract.tenantId);
+    console.log('  - contract.tenant?.id:', contract.tenant?.id);
+    console.log('  - Match tenantId?', contract.tenantId === userId);
+    console.log('  - Match tenant.id?', contract.tenant?.id === userId);
+
+    // Check if the user is the tenant of this contract
+    if (contract.tenant?.id !== userId && contract.tenantId !== userId) {
+      throw new ForbiddenException('Only the tenant can approve this contract');
+    }
+
+    if (contract.status !== ContractStatus.PENDING_TENANT) {
+      throw new BadRequestException('Contract is not in PENDING_TENANT status');
+    }
+
+    contract.status = ContractStatus.ACTIVE;
+    const savedContract = await this.contractRepository.save(contract);
+
+    // Update Room status to OCCUPIED
+    if (contract.type === ContractType.ROOM && contract.roomId) {
+      const room = await this.roomRepository.findOne({ where: { id: contract.roomId } });
+      if (room) {
+        room.status = RoomStatus.OCCUPIED;
+        room.tenantId = contract.tenantId;
+        await this.roomRepository.save(room);
+      }
     }
 
     return savedContract;
@@ -321,11 +357,24 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
     `.trim();
   }
 
-  async findAll() {
-    return this.contractRepository.find({
+  async findAll(user?: any) {
+    const contracts = await this.contractRepository.find({
       relations: ['room', 'room.owner', 'motel', 'motel.owner', 'tenant', 'bills'],
       order: { createdAt: 'DESC' }
     });
+
+    if (user && user.role === 'TENANT') {
+      return contracts.filter(c => c.tenantId === user.id);
+    }
+
+    if (user && user.role === 'LANDLORD') {
+      return contracts.filter(c =>
+        c.room?.ownerId === user.id ||
+        c.motel?.ownerId === user.id
+      );
+    }
+
+    return contracts;
   }
 
   async findOne(id: string) {
@@ -376,7 +425,10 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
     const contract = await this.findOne(id);
 
     const ownerId = contract.room?.ownerId || contract.motel?.ownerId;
-    if (userRole !== UserRole.ADMIN && ownerId !== userId) {
+    const isOwner = ownerId === userId;
+    const isTenant = contract.tenantId === userId;
+
+    if (userRole !== UserRole.ADMIN && !isOwner && !isTenant) {
       throw new ForbiddenException('No permission to terminate this contract');
     }
 
@@ -395,9 +447,8 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
   async remove(id: string, userId: string, userRole: UserRole) {
     const contract = await this.findOne(id);
 
-    const ownerId = contract.room?.ownerId || contract.motel?.ownerId;
-    if (userRole !== UserRole.ADMIN && ownerId !== userId) {
-      throw new ForbiddenException('No permission to delete this contract');
+    if (userRole !== UserRole.ADMIN) {
+      throw new ForbiddenException('Only admin can delete a contract record permanently. Use Terminate for normal workflow.');
     }
 
     if (contract.bills && contract.bills.length > 0) {

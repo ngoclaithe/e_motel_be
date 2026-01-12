@@ -51,7 +51,15 @@ export class BillService {
       return bills.filter(bill => bill.contract?.tenantId === user.id);
     }
 
-    // Admin and Landlord see all bills
+    // If landlord, only return bills for their rooms or motels
+    if (user && user.role === 'LANDLORD') {
+      return bills.filter(bill =>
+        bill.contract?.room?.ownerId === user.id ||
+        bill.contract?.motel?.ownerId === user.id
+      );
+    }
+
+    // Admin see all bills
     return bills;
   }
 

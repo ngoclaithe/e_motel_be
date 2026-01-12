@@ -16,6 +16,12 @@ export enum SecurityType {
   NONE = 'NONE'
 }
 
+export enum MotelStatus {
+  VACANT = 'VACANT',
+  OCCUPIED = 'OCCUPIED',
+  MAINTENANCE = 'MAINTENANCE'
+}
+
 @Entity('motels')
 export class Motel {
   @PrimaryGeneratedColumn('uuid')
@@ -24,11 +30,21 @@ export class Motel {
   @Column()
   name: string;
 
+  @Column({ unique: true, nullable: true })
+  slug: string;
+
   @Column()
   address: string;
 
   @Column({ nullable: true, length: 2000 })
   description: string;
+
+  @Column({
+    type: 'enum',
+    enum: MotelStatus,
+    default: MotelStatus.VACANT
+  })
+  status: MotelStatus;
 
   @Column()
   totalRooms: number;
@@ -116,8 +132,6 @@ export class Motel {
   @Column({ nullable: true })
   contactPhone: string;
 
-  @Column({ nullable: true })
-  contactEmail: string;
 
   @Column({ nullable: true })
   contactZalo: string;

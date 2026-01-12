@@ -1,9 +1,9 @@
-import { 
-  IsString, 
-  IsNotEmpty, 
-  IsOptional, 
-  IsNumber, 
-  IsArray, 
+import {
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsNumber,
+  IsArray,
   IsUrl,
   IsBoolean,
   IsEnum,
@@ -12,10 +12,10 @@ import {
   Min,
   Max,
   MaxLength,
-  ArrayMaxSize 
+  ArrayMaxSize
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AlleyType, SecurityType } from '../entities/motel.entity';
+import { AlleyType, SecurityType, MotelStatus } from '../entities/motel.entity';
 
 export class CreateMotelDto {
   @IsString()
@@ -53,7 +53,13 @@ export class CreateMotelDto {
   // Access & Infrastructure
   @IsEnum(AlleyType)
   @IsOptional()
+  @Type(() => String)
   alleyType?: AlleyType;
+
+  @IsEnum(MotelStatus)
+  @IsOptional()
+  @Type(() => String)
+  status?: MotelStatus;
 
   @IsNumber()
   @IsOptional()
@@ -158,9 +164,6 @@ export class CreateMotelDto {
   @MaxLength(20)
   contactPhone?: string;
 
-  @IsEmail()
-  @IsOptional()
-  contactEmail?: string;
 
   @IsString()
   @IsOptional()
@@ -232,6 +235,10 @@ export class FilterMotelDto {
   @IsEnum(AlleyType)
   @IsOptional()
   alleyType?: AlleyType;
+
+  @IsEnum(MotelStatus)
+  @IsOptional()
+  status?: MotelStatus;
 
   @IsEnum(SecurityType)
   @IsOptional()
@@ -309,6 +316,10 @@ export class UpdateMotelDto {
   @IsOptional()
   alleyType?: AlleyType;
 
+  @IsEnum(MotelStatus)
+  @IsOptional()
+  status?: MotelStatus;
+
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -412,9 +423,6 @@ export class UpdateMotelDto {
   @MaxLength(20)
   contactPhone?: string;
 
-  @IsEmail()
-  @IsOptional()
-  contactEmail?: string;
 
   @IsString()
   @IsOptional()
