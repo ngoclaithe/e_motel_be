@@ -72,12 +72,40 @@ export class RoomService implements OnModuleInit {
     return slugify(text, { lower: true, locale: 'vi', strict: true }) + '-' + Math.random().toString(36).substring(2, 7);
   }
 
+  private async validateMotelRelationship(motelId: string, ownerId: string, userRole: UserRole, currentRoomId?: string): Promise<void> {
+    const motel = await this.motelRepository.findOne({
+      where: { id: motelId },
+      relations: ['rooms'],
+    });
+
+    if (!motel) {
+      throw new NotFoundException(`Motel with ID ${motelId} not found`);
+    }
+
+    if (userRole !== UserRole.ADMIN && motel.ownerId !== ownerId) {
+      throw new ForbiddenException('You do not have permission to link to this motel');
+    }
+
+    if (motel.totalRooms < 2) {
+      throw new BadRequestException('Motel must have at least 2 rooms to link.');
+    }
+
+    const linkedRoomsCount = motel.rooms.filter(r => r.id !== currentRoomId).length;
+    if (linkedRoomsCount >= motel.totalRooms) {
+      throw new BadRequestException(`Motel already has maximum rooms linked (${motel.totalRooms}).`);
+    }
+  }
+
   // Tạo phòng mới (phải gán ownerId từ user đăng nhập)
   async create(createRoomDto: CreateRoomDto, ownerId: string): Promise<Room> {
     const { images, ...roomData } = createRoomDto;
 
     if (images && images.length > 0) {
       this.validateImageUrls(images);
+    }
+
+    if (roomData.motelId) {
+      await this.validateMotelRelationship(roomData.motelId, ownerId, UserRole.LANDLORD); // landlord can create
     }
 
     const room = this.roomRepository.create({
@@ -173,6 +201,12 @@ export class RoomService implements OnModuleInit {
     }
 
     const { images, ...roomData } = updateRoomDto;
+
+    if (roomData.motelId !== undefined && roomData.motelId !== room.motelId) {
+      if (roomData.motelId) {
+        await this.validateMotelRelationship(roomData.motelId, userId, userRole, id);
+      }
+    }
 
     if (roomData.number && roomData.number !== room.number) {
       room.slug = this.generateSlug(`phong-${roomData.number}`);

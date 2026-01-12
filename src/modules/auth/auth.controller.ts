@@ -6,7 +6,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
@@ -20,15 +20,15 @@ export class AuthController {
     // Set httpOnly cookies
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Required for sameSite: 'none'
+      sameSite: 'none',
       maxAge: 1 * 60 * 60 * 1000, // 1 hour
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Required for sameSite: 'none'
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
@@ -75,15 +75,15 @@ export class AuthController {
     // Set new httpOnly cookies
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Required for sameSite: 'none'
+      sameSite: 'none',
       maxAge: 1 * 60 * 60 * 1000, // 1 hour
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true, // Required for sameSite: 'none'
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 

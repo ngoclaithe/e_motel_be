@@ -227,6 +227,10 @@ export class CreateRoomDto {
   @IsUrl({}, { each: true, message: 'Each image must be a valid URL' })
   @ArrayMaxSize(20, { message: 'Maximum 20 images allowed' })
   images?: string[];
+
+  @IsString()
+  @IsOptional()
+  motelId?: string;
 }
 
 export class UpdateRoomDto {
@@ -448,4 +452,8 @@ export class UpdateRoomDto {
   @IsUrl({}, { each: true, message: 'Each image must be a valid URL' })
   @ArrayMaxSize(20, { message: 'Maximum 20 images allowed' })
   images?: string[];
+
+  @IsString()
+  @IsOptional()
+  motelId?: string;
 }

@@ -7,7 +7,7 @@ import axios from 'axios';
 
 @Injectable()
 export class FaceVerificationService {
-    private readonly faceApiUrl = process.env.FACE_API_URL || 'http://localhost:8001';
+    private readonly faceApiUrl = process.env.FACE_API_URL || 'http://localhost:8003';
 
     constructor(
         @InjectRepository(User)

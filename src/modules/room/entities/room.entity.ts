@@ -12,6 +12,7 @@ import { User } from '../../user/entities/user.entity';
 import { Contract } from '../../contract/entities/contract.entity';
 import { Feedback } from '../../feedback/entities/feedback.entity';
 import { Image } from '../../image/entities/image.entity';
+import { Motel } from '../../motel/entities/motel.entity';
 
 export enum RoomStatus {
   VACANT = 'VACANT',
@@ -164,6 +165,13 @@ export class Room {
   @ManyToOne(() => User, (user) => user.rentedRooms)
   @JoinColumn({ name: 'tenantId' })
   tenant: User;
+
+  @Column({ nullable: true })
+  motelId: string;
+
+  @ManyToOne(() => Motel, (motel) => motel.rooms, { nullable: true })
+  @JoinColumn({ name: 'motelId' })
+  motel: Motel;
 
   @OneToMany(() => Contract, (contract) => contract.room, {
     cascade: true,

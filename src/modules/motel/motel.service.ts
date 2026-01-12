@@ -62,6 +62,10 @@ export class MotelService {
       slug: this.generateSlug(motelData.name),
     });
 
+    if (motel.totalRooms < 2) {
+      throw new BadRequestException('Motel must have at least 2 rooms.');
+    }
+
     const savedMotel = await this.motelRepository.save(motel);
 
     if (images && images.length > 0) {
@@ -98,7 +102,8 @@ export class MotelService {
     const queryBuilder = this.motelRepository
       .createQueryBuilder('motel')
       .leftJoinAndSelect('motel.owner', 'owner')
-      .leftJoinAndSelect('motel.images', 'images');
+      .leftJoinAndSelect('motel.images', 'images')
+      .leftJoinAndSelect('motel.rooms', 'rooms');
 
     if (search) {
       queryBuilder.where(
@@ -166,7 +171,7 @@ export class MotelService {
   async findOne(id: string): Promise<Motel> {
     const motel = await this.motelRepository.findOne({
       where: { id },
-      relations: ['owner', 'images'],
+      relations: ['owner', 'images', 'rooms'],
     });
 
     if (!motel) {
@@ -179,7 +184,7 @@ export class MotelService {
   async findBySlug(slug: string): Promise<Motel> {
     let motel = await this.motelRepository.findOne({
       where: { slug },
-      relations: ['owner', 'images'],
+      relations: ['owner', 'images', 'rooms'],
     });
 
     if (!motel) {
@@ -193,7 +198,7 @@ export class MotelService {
           // Thử tìm theo ID nếu k phải UUID (dữ liệu cũ khác)
           motel = await this.motelRepository.findOne({
             where: { id: slug as any },
-            relations: ['owner', 'images'],
+            relations: ['owner', 'images', 'rooms'],
           });
         }
       } catch (e) {
@@ -227,6 +232,11 @@ export class MotelService {
     }
 
     Object.assign(motel, motelData);
+
+    if (motel.totalRooms < 2) {
+      throw new BadRequestException('Motel must have at least 2 rooms.');
+    }
+
     await this.motelRepository.save(motel);
 
     if (images !== undefined) {
@@ -265,7 +275,7 @@ export class MotelService {
   async findByOwner(ownerId: string): Promise<Motel[]> {
     return this.motelRepository.find({
       where: { ownerId },
-      relations: ['images', 'owner'],
+      relations: ['images', 'owner', 'rooms'],
       order: {
         createdAt: 'DESC',
       },

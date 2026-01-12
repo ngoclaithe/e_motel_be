@@ -57,11 +57,18 @@ export class ContractService {
 
       motel = await this.motelRepository.findOne({
         where: { id: createDto.motelId },
-        relations: ['owner']
+        relations: ['owner', 'rooms']
       });
 
       if (!motel) {
         throw new NotFoundException('Motel not found');
+      }
+
+      // Check if all rooms are vacant
+      const occupiedRooms = motel.rooms.filter(room => room.status !== RoomStatus.VACANT);
+      if (occupiedRooms.length > 0) {
+        const roomNumbers = occupiedRooms.map(r => r.number).join(', ');
+        throw new BadRequestException(`Cannot rent the entire motel because some rooms are not vacant: ${roomNumbers}`);
       }
 
 
