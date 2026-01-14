@@ -17,7 +17,6 @@ export class NotificationService {
     async create(dto: CreateNotificationDto, createdById: string): Promise<Notification> {
         let toUserId: string | null = null;
 
-        // If toEmail is provided, find the user by email
         if (dto.toEmail) {
             const user = await this.userService.findByEmail(dto.toEmail);
             if (user) {
@@ -69,7 +68,6 @@ export class NotificationService {
             throw new NotFoundException('Notification not found');
         }
 
-        // Check if user has permission to mark as read
         if (notification.toUserId && notification.toUserId !== userId) {
             throw new ForbiddenException('You do not have permission to mark this notification as read');
         }

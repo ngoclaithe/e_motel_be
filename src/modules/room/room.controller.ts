@@ -40,7 +40,6 @@ export class RoomController {
     return this.roomService.findVacant();
   }
 
-  // Route tĩnh phải đặt TRƯỚC route động
   @Get('my-rooms')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.LANDLORD, UserRole.ADMIN, UserRole.TENANT)
@@ -48,7 +47,6 @@ export class RoomController {
     return this.roomService.findMyRooms(req.user.id, req.user.role, status);
   }
 
-  // Route động – đặt SAU các route tĩnh
   @Get('s/:slug')
   findBySlug(@Param('slug') slug: string) {
     return this.roomService.findBySlug(slug);

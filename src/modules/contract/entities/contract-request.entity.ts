@@ -50,7 +50,6 @@ export class ContractRequest {
     })
     status: ContractRequestStatus;
 
-    // Room or Motel being requested
     @Column({ nullable: true })
     roomId: string;
 
@@ -65,7 +64,6 @@ export class ContractRequest {
     @JoinColumn({ name: 'motelId' })
     motel: Motel;
 
-    // Parties involved
     @Column()
     landlordId: string;
 
@@ -80,7 +78,6 @@ export class ContractRequest {
     @JoinColumn({ name: 'tenantId' })
     tenant: User;
 
-    // Contract terms (proposed by initiator)
     @Column({ type: 'timestamp' })
     startDate: Date;
 
@@ -112,15 +109,14 @@ export class ContractRequest {
     specialTerms: string;
 
     @Column({ type: 'text', nullable: true })
-    message: string; // Message from initiator
+    message: string;
 
     @Column({ type: 'text', nullable: true })
-    responseMessage: string; // Response from approver
+    responseMessage: string; 
 
     @Column({ type: 'timestamp', nullable: true })
     respondedAt: Date;
 
-    // If approved, link to created contract
     @Column({ nullable: true })
     contractId: string;
 

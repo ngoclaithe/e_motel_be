@@ -12,8 +12,8 @@ export enum ContractStatus {
 }
 
 export enum ContractType {
-  ROOM = 'ROOM',   // Thuê phòng
-  MOTEL = 'MOTEL'  // Thuê cả nhà trọ
+  ROOM = 'ROOM',   
+  MOTEL = 'MOTEL'  
 }
 
 @Entity('contracts')

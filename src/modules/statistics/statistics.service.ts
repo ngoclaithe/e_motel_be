@@ -27,8 +27,6 @@ export class StatisticsService {
         const today = new Date();
         const sixMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
 
-        // Get all paid bills for this landlord in the last 6 months
-        // We need to join relations to filter by landlordId (owner of room/motel)
         const bills = await this.billRepository
             .createQueryBuilder('bill')
             .leftJoinAndSelect('bill.contract', 'contract')
@@ -42,10 +40,8 @@ export class StatisticsService {
             )
             .getMany();
 
-        // Group by month
         const monthlyRevenue = {};
 
-        // Initialize last 6 months with 0
         for (let i = 5; i >= 0; i--) {
             const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
             const key = `${d.getMonth() + 1}/${d.getFullYear()}`;
@@ -53,10 +49,6 @@ export class StatisticsService {
         }
 
         bills.forEach(bill => {
-            // Use paidAt if available, otherwise payementDate (assuming month field is payment date or due date?)
-            // distinct from month field which effectively designates which billing cycle
-            // The entity has `month` (timestamp) and `paidAt` (timestamp, nullable)
-            // We should use `paidAt` for cash flow, or `month` for accrual. Using `month` (billing period) is usually better for "Revenue of Month X"
 
             const date = new Date(bill.month);
             const key = `${date.getMonth() + 1}/${date.getFullYear()}`;
@@ -89,20 +81,18 @@ export class StatisticsService {
         });
 
         return [
-            { name: 'Trống', value: statusCounts[RoomStatus.VACANT], color: '#10B981' }, // Emerald-500
-            { name: 'Đã thuê', value: statusCounts[RoomStatus.OCCUPIED], color: '#3B82F6' }, // Blue-500
-            { name: 'Bảo trì', value: statusCounts[RoomStatus.MAINTENANCE], color: '#F59E0B' }, // Amber-500
+            { name: 'Trống', value: statusCounts[RoomStatus.VACANT], color: '#10B981' }, 
+            { name: 'Đã thuê', value: statusCounts[RoomStatus.OCCUPIED], color: '#3B82F6' }, 
+            { name: 'Bảo trì', value: statusCounts[RoomStatus.MAINTENANCE], color: '#F59E0B' }, 
         ];
     }
 
     async getLandlordOverview(userId: string) {
-        // Total Rooms
+
         const totalRooms = await this.roomRepository.count({
             where: { ownerId: userId }
         });
 
-        // Total Active Contracts
-        // We need contracts where room.ownerId = userId or motel.ownerId = userId
         const activeContracts = await this.contractRepository
             .createQueryBuilder('contract')
             .leftJoin('contract.room', 'room')
@@ -114,10 +104,8 @@ export class StatisticsService {
             )
             .getCount();
 
-        // Total Tenants (approximate by active contracts for now, strictly one tenant per contract usually)
         const totalTenants = activeContracts;
 
-        // Revenue this month
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -155,14 +143,12 @@ export class StatisticsService {
             where: { status: ContractStatus.ACTIVE }
         });
 
-        // Total revenue (all paid bills)
         const totalRevenue = await this.billRepository
             .createQueryBuilder('bill')
             .where('bill.isPaid = :isPaid', { isPaid: true })
             .select('SUM(bill.totalAmount)', 'total')
             .getRawOne();
 
-        // Revenue this month
         const today = new Date();
         const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
@@ -196,7 +182,6 @@ export class StatisticsService {
             .andWhere('bill.month >= :twelveMonthsAgo', { twelveMonthsAgo })
             .getMany();
 
-        // Initialize last 12 months
         const monthlyData = [];
         for (let i = 11; i >= 0; i--) {
             const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
@@ -227,7 +212,6 @@ export class StatisticsService {
             .where('user.createdAt >= :twelveMonthsAgo', { twelveMonthsAgo })
             .getMany();
 
-        // Initialize last 12 months
         const monthlyData = [];
         for (let i = 11; i >= 0; i--) {
             const d = new Date(today.getFullYear(), today.getMonth() - i, 1);

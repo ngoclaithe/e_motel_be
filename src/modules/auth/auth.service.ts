@@ -165,7 +165,6 @@ export class AuthService {
   }
 
   async refreshWithToken(refreshToken: string) {
-    // verify token signature and payload
     try {
       const payload: any = await this.jwtService.verifyAsync(refreshToken);
       const userId = payload.sub;

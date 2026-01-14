@@ -17,19 +17,18 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) res: Response) {
     const tokens = await this.authService.login(loginDto);
 
-    // Set httpOnly cookies
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: true, // Required for sameSite: 'none'
+      secure: true, 
       sameSite: 'none',
-      maxAge: 1 * 60 * 60 * 1000, // 1 hour
+      maxAge: 24 * 60 * 60 * 1000, 
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: true, // Required for sameSite: 'none'
+      secure: true, 
       sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, 
     });
 
     return { message: 'Login successful' };
@@ -54,14 +53,12 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Req() req, @Res({ passthrough: true }) res: Response) {
-    // Clear cookies
     res.clearCookie('accessToken');
     res.clearCookie('refreshToken');
 
     return this.authService.logout(req.user.id);
   }
 
-  // Refresh token endpoint - does not require access token
   @Post('refresh')
   async refresh(@Req() req, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies?.refreshToken;
@@ -72,19 +69,18 @@ export class AuthController {
 
     const tokens = await this.authService.refreshWithToken(refreshToken);
 
-    // Set new httpOnly cookies
     res.cookie('accessToken', tokens.accessToken, {
       httpOnly: true,
-      secure: true, // Required for sameSite: 'none'
+      secure: true, 
       sameSite: 'none',
-      maxAge: 1 * 60 * 60 * 1000, // 1 hour
+      maxAge: 24 * 60 * 60 * 1000, 
     });
 
     res.cookie('refreshToken', tokens.refreshToken, {
       httpOnly: true,
-      secure: true, // Required for sameSite: 'none'
+      secure: true, 
       sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 30 * 24 * 60 * 60 * 1000, 
     });
 
     return { message: 'Token refreshed successfully' };

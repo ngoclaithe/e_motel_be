@@ -39,7 +39,6 @@ export class CreateRoomDto {
   @Type(() => Number)
   price: number;
 
-  // Bathroom
   @IsEnum(BathroomType)
   @IsOptional()
   bathroomType?: BathroomType;
@@ -48,7 +47,6 @@ export class CreateRoomDto {
   @IsOptional()
   hasWaterHeater?: boolean;
 
-  // Room Features
   @IsEnum(FurnishingStatus)
   @IsOptional()
   furnishingStatus?: FurnishingStatus;
@@ -104,7 +102,6 @@ export class CreateRoomDto {
   @Type(() => Boolean)
   hasKitchenTable?: boolean;
 
-  // Capacity & Restrictions
   @IsNumber()
   @IsOptional()
   @Min(1)
@@ -124,13 +121,11 @@ export class CreateRoomDto {
   @IsOptional()
   allowOppositeGender?: boolean;
 
-  // Floor & Position
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
   floor?: number;
 
-  // Utilities Cost
   @IsNumber()
   @IsOptional()
   @Min(0)
@@ -161,7 +156,6 @@ export class CreateRoomDto {
   @Type(() => Number)
   serviceFee?: number;
 
-  // Payment Terms
   @IsNumber()
   @IsOptional()
   @Min(1)
@@ -176,7 +170,6 @@ export class CreateRoomDto {
   @Type(() => Number)
   depositMonths?: number;
 
-  // Additional Info
   @IsString()
   @IsOptional()
   @MaxLength(2000)
@@ -191,7 +184,6 @@ export class CreateRoomDto {
   @IsOptional()
   availableFrom?: Date;
 
-  // Equipment Management (Quản lý thiết bị - tùy chọn)
   @IsNumber()
   @IsOptional()
   @Min(0)

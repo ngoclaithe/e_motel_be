@@ -33,7 +33,6 @@ export class BillService {
 
     const saved = await this.billRepository.save(bill);
 
-    // notify tenant by email
     if (contract.tenant && contract.tenant.email) {
       await this.mailService.sendBillNotification(contract.tenant.email, { month: dto.month, totalAmount: total, dueDate: dto.month });
     }
@@ -46,12 +45,10 @@ export class BillService {
       relations: ['contract', 'contract.tenant', 'contract.room', 'contract.room.owner', 'contract.motel', 'contract.motel.owner']
     });
 
-    // If tenant, only return bills for contracts where they are the tenant
     if (user && user.role === 'TENANT') {
       return bills.filter(bill => bill.contract?.tenantId === user.id);
     }
 
-    // If landlord, only return bills for their rooms or motels
     if (user && user.role === 'LANDLORD') {
       return bills.filter(bill =>
         bill.contract?.room?.ownerId === user.id ||
@@ -59,7 +56,6 @@ export class BillService {
       );
     }
 
-    // Admin see all bills
     return bills;
   }
 

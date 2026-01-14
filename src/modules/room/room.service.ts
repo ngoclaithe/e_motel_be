@@ -26,7 +26,6 @@ export class RoomService implements OnModuleInit {
     private readonly motelRepository: Repository<Motel>,
   ) { }
 
-  // Kiểm tra URL hợp lệ
   private isValidUrl(url: string): boolean {
     try {
       const parsedUrl = new URL(url);
@@ -60,7 +59,6 @@ export class RoomService implements OnModuleInit {
     console.log('RoomService: Slug check completed.');
   }
 
-  // Validate danh sách URL ảnh
   private validateImageUrls(urls: string[]): void {
     const invalidUrls = urls.filter((url) => !this.isValidUrl(url));
     if (invalidUrls.length > 0) {
@@ -96,7 +94,6 @@ export class RoomService implements OnModuleInit {
     }
   }
 
-  // Tạo phòng mới (phải gán ownerId từ user đăng nhập)
   async create(createRoomDto: CreateRoomDto, ownerId: string): Promise<Room> {
     const { images, ...roomData } = createRoomDto;
 
@@ -105,7 +102,7 @@ export class RoomService implements OnModuleInit {
     }
 
     if (roomData.motelId) {
-      await this.validateMotelRelationship(roomData.motelId, ownerId, UserRole.LANDLORD); // landlord can create
+      await this.validateMotelRelationship(roomData.motelId, ownerId, UserRole.LANDLORD); 
     }
 
     const room = this.roomRepository.create({
@@ -130,7 +127,6 @@ export class RoomService implements OnModuleInit {
     return this.findOne(savedRoom.id);
   }
 
-  // Lấy toàn bộ phòng (admin)
   async findAll(): Promise<Room[]> {
     return this.roomRepository.find({
       relations: ['owner', 'tenant', 'images', 'contracts', 'feedbacks'],
@@ -138,7 +134,6 @@ export class RoomService implements OnModuleInit {
     });
   }
 
-  // Lấy chi tiết phòng
   async findOne(id: string): Promise<Room> {
     const room = await this.roomRepository.findOne({
       where: { id },
@@ -152,7 +147,6 @@ export class RoomService implements OnModuleInit {
     return room;
   }
 
-  // Lấy chi tiết phòng qua slug hoặc ID
   async findBySlug(slug: string): Promise<Room> {
     let room = await this.roomRepository.findOne({
       where: { slug },
@@ -160,14 +154,12 @@ export class RoomService implements OnModuleInit {
     });
 
     if (!room) {
-      // Kiểm tra nếu slug truyền vào có định dạng UUID thì tìm theo ID
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
 
       try {
         if (isUuid) {
           room = await this.findOne(slug);
         } else {
-          // Nếu không phải UUID, có thể là dữ liệu cũ chưa có slug nhưng dùng ID kiểu khác (ít khả năng nhưng an toàn)
           room = await this.roomRepository.findOne({
             where: { id: slug as any },
             relations: ['owner', 'tenant', 'images', 'contracts', 'feedbacks'],
@@ -185,7 +177,6 @@ export class RoomService implements OnModuleInit {
     return room;
   }
 
-  // Cập nhật phòng
   async update(
     id: string,
     userId: string,
@@ -229,7 +220,6 @@ export class RoomService implements OnModuleInit {
     return this.findOne(id);
   }
 
-  // Xóa phòng
   async remove(id: string, userId: string, userRole: UserRole): Promise<{ message: string }> {
     console.log('remove() called with', { id, userId, userRole });
 
@@ -261,7 +251,6 @@ export class RoomService implements OnModuleInit {
         );
       }
 
-      // Add other filters if needed for motels (like hasParking etc)
       if (query.hasWifi) qb.andWhere('motel.hasWifi = :hasWifi', { hasWifi: true });
       if (query.hasParking) qb.andWhere('motel.hasParking = :hasParking', { hasParking: true });
       if (query.hasKitchen) qb.andWhere('motel.hasKitchen = :hasKitchen', { hasKitchen: true });
@@ -274,7 +263,6 @@ export class RoomService implements OnModuleInit {
 
       const [motels, total] = await qb.getManyAndCount();
 
-      // Lazy migration for slugs
       for (const motel of motels) {
         if (!motel.slug) {
           motel.slug = this.generateSlug(motel.name);
@@ -297,7 +285,6 @@ export class RoomService implements OnModuleInit {
       .leftJoinAndSelect('room.owner', 'owner')
       .where('room.status = :status', { status: RoomStatus.VACANT });
 
-    // Search filters
     if (query.keyword) {
       const keyword = `%${query.keyword}%`;
       qb.andWhere(
@@ -314,7 +301,6 @@ export class RoomService implements OnModuleInit {
       qb.andWhere('room.price <= :maxPrice', { maxPrice: query.maxPrice });
     }
 
-    // Amenities filters
     if (query.hasAirConditioner) {
       qb.andWhere('room.hasAirConditioner = :hasAirConditioner', { hasAirConditioner: true });
     }
@@ -327,7 +313,6 @@ export class RoomService implements OnModuleInit {
       qb.andWhere('room.hasKitchen = :hasKitchen', { hasKitchen: true });
     }
 
-    // Sort
     if (query.sort === 'price_asc') {
       qb.orderBy('room.price', 'ASC');
     } else if (query.sort === 'price_desc') {
@@ -336,14 +321,12 @@ export class RoomService implements OnModuleInit {
       qb.orderBy('room.createdAt', 'DESC');
     }
 
-    // Pagination
     const page = query.page || 1;
     const limit = query.limit || 12;
     qb.skip((page - 1) * limit).take(limit);
 
     const [rooms, total] = await qb.getManyAndCount();
 
-    // Lazy migration for slugs
     for (const room of rooms) {
       if (!room.slug) {
         room.slug = this.generateSlug(`phong-${room.number}`);
@@ -361,7 +344,6 @@ export class RoomService implements OnModuleInit {
     };
   }
 
-  // Tìm các phòng trống
   async findVacant(): Promise<Room[]> {
     return this.roomRepository.find({
       where: { status: RoomStatus.VACANT },
@@ -370,7 +352,6 @@ export class RoomService implements OnModuleInit {
     });
   }
 
-  // Tìm phòng theo user (landlord: ownerId, tenant: tenantId)
   async findMyRooms(userId: string, userRole?: string, status?: RoomStatus): Promise<Room[]> {
     const query = this.roomRepository.createQueryBuilder('room');
 
@@ -395,7 +376,6 @@ export class RoomService implements OnModuleInit {
     return query.getMany();
   }
 
-  // Cập nhật trạng thái phòng
   async updateStatus(id: string, status: RoomStatus): Promise<Room> {
     const room = await this.findOne(id);
     room.status = status;

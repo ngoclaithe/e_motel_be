@@ -20,13 +20,11 @@ export class CreateContractDto {
   @IsNotEmpty({ message: 'type is required (ROOM or MOTEL)' })
   type: ContractType;
 
-  // Room ID - required nếu type = ROOM
   @ValidateIf(o => o.type === ContractType.ROOM)
   @IsUUID()
   @IsNotEmpty({ message: 'roomId is required when type is ROOM' })
   roomId?: string;
 
-  // Motel ID - required nếu type = MOTEL
   @ValidateIf(o => o.type === ContractType.MOTEL)
   @IsUUID()
   @IsNotEmpty({ message: 'motelId is required when type is MOTEL' })
@@ -58,28 +56,27 @@ export class CreateContractDto {
   @Min(1, { message: 'paymentCycleMonths must be at least 1' })
   @Type(() => Number)
   @IsOptional()
-  paymentCycleMonths?: number; // Default sẽ lấy từ room/motel
+  paymentCycleMonths?: number; 
 
   @IsInt({ message: 'paymentDay must be an integer between 1-31' })
   @Min(1, { message: 'paymentDay must be at least 1' })
   @Max(31, { message: 'paymentDay must be at most 31' })
   @Type(() => Number)
   @IsOptional()
-  paymentDay?: number; // Ngày thanh toán hàng tháng
+  paymentDay?: number; 
 
   @IsInt({ message: 'depositMonths must be an integer' })
   @Min(0, { message: 'depositMonths must be at least 0' })
   @Type(() => Number)
   @IsOptional()
-  depositMonths?: number; // Default sẽ lấy từ room/motel
+  depositMonths?: number; 
 
   @IsInt({ message: 'maxOccupants must be an integer' })
   @Min(1, { message: 'maxOccupants must be at least 1' })
   @Type(() => Number)
   @IsOptional()
-  maxOccupants?: number; // Default sẽ lấy từ room/motel
+  maxOccupants?: number; 
 
-  // Override giá dịch vụ nếu khác với room/motel
   @IsNumber({}, { message: 'electricityCostPerKwh must be a number' })
   @Min(0)
   @Type(() => Number)
@@ -113,7 +110,7 @@ export class CreateContractDto {
   @IsString()
   @IsOptional()
   @MaxLength(5000, { message: 'specialTerms must not exceed 5000 characters' })
-  specialTerms?: string; // Điều khoản đặc biệt
+  specialTerms?: string; 
 }
 
 export class UpdateContractDto {

@@ -29,7 +29,6 @@ export class FeedbackService {
       status: FeedbackStatus.PENDING,
     });
 
-    // upload images if base64
     if (dto.images && dto.images.length) {
       const uploads = await Promise.all(dto.images.map(async (img) => {
         if (img.startsWith('data:image')) {
@@ -56,7 +55,6 @@ export class FeedbackService {
 
   async update(id: string, userId: string, userRole: string, dto: UpdateFeedbackDto) {
     const fb = await this.findOne(id);
-    // Allow owner (landlord) or admin to update status, tenant can update own request
     if (userRole !== 'ADMIN' && userRole !== 'LANDLORD' && fb.userId !== userId) {
       throw new ForbiddenException('No permission');
     }

@@ -75,7 +75,6 @@ export class Room {
   })
   furnishingStatus: FurnishingStatus;
 
-  // Room features
   @Column({ default: false }) hasAirConditioner: boolean;
   @Column({ default: false }) hasBalcony: boolean;
   @Column({ default: false }) hasWindow: boolean;
@@ -89,7 +88,6 @@ export class Room {
   @Column({ default: false }) hasFan: boolean;
   @Column({ default: false }) hasKitchenTable: boolean;
 
-  // Capacity & Restrictions
   @Column({ type: 'int', default: 2 })
   maxOccupancy: number;
 
@@ -97,11 +95,9 @@ export class Room {
   @Column({ default: false }) allowCooking: boolean;
   @Column({ default: false }) allowOppositeGender: boolean;
 
-  // Floor & Position
   @Column({ type: 'int', nullable: true })
   floor: number;
 
-  // Utilities Cost
   @Column({ type: 'float', nullable: true, default: 0 })
   electricityCostPerKwh: number;
 
@@ -117,7 +113,6 @@ export class Room {
   @Column({ type: 'float', nullable: true, default: 0 })
   serviceFee: number;
 
-  // Equipment Management (Optional - Quản lý thiết bị)
   @Column({ type: 'int', default: 0 })
   airConditionerCount: number;
 
@@ -131,9 +126,8 @@ export class Room {
   lightBulbCount: number;
 
   @Column({ type: 'text', nullable: true })
-  otherEquipment: string; // JSON string for flexible equipment list
+  otherEquipment: string; 
 
-  // Payment Terms
   @Column({ type: 'int', nullable: true, default: 1 })
   paymentCycleMonths: number;
 
@@ -150,7 +144,6 @@ export class Room {
   @Column({ type: 'date', nullable: true })
   availableFrom: Date;
 
-  // Owner (landlord who owns this room directly)
   @Column()
   ownerId: string;
 
@@ -158,7 +151,6 @@ export class Room {
   @JoinColumn({ name: 'ownerId' })
   owner: User;
 
-  // Tenant (if occupied)
   @Column({ nullable: true })
   tenantId: string;
 

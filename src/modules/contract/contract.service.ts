@@ -64,7 +64,6 @@ export class ContractService {
         throw new NotFoundException('Motel not found');
       }
 
-      // Check if all rooms are vacant
       const occupiedRooms = motel.rooms.filter(room => room.status !== RoomStatus.VACANT);
       if (occupiedRooms.length > 0) {
         const roomNumbers = occupiedRooms.map(r => r.number).join(', ');
@@ -78,7 +77,6 @@ export class ContractService {
       throw new BadRequestException('Invalid contract type');
     }
 
-    // Load tenant info
     const tenant = await this.userRepository.findOne({
       where: { id: createDto.tenantId }
     });
@@ -87,14 +85,12 @@ export class ContractService {
       throw new NotFoundException('Tenant not found');
     }
 
-    // Validate dates
     const startDate = new Date(createDto.startDate);
     const endDate = new Date(createDto.endDate);
     if (endDate <= startDate) {
       throw new BadRequestException('End date must be after start date');
     }
 
-    // Prepare contract data với defaults từ room hoặc motel
     const contractData = {
       type: createDto.type,
       roomId: createDto.roomId || null,
@@ -109,18 +105,15 @@ export class ContractService {
       paymentDay: createDto.paymentDay ?? 5,
       maxOccupants: createDto.maxOccupants ?? (room?.maxOccupancy || (motel ? motel.totalRooms * 4 : 2)),
 
-      // Service costs - priority: DTO > Room > Motel
       electricityCostPerKwh: createDto.electricityCostPerKwh ?? (room?.electricityCostPerKwh || motel?.electricityCostPerKwh),
       waterCostPerCubicMeter: createDto.waterCostPerCubicMeter ?? (room?.waterCostPerCubicMeter || motel?.waterCostPerCubicMeter),
       internetCost: createDto.internetCost ?? (room?.internetCost || motel?.internetCost),
       parkingCost: createDto.parkingCost ?? (room?.parkingCost || motel?.parkingCost),
       serviceFee: createDto.serviceFee ?? room?.serviceFee,
 
-      // Services availability
       hasWifi: room?.hasWifi || motel?.hasWifi,
       hasParking: motel?.hasParking,
 
-      // Additional info
       specialTerms: createDto.specialTerms,
       regulations: motel?.regulations,
       status: ContractStatus.PENDING_TENANT,
@@ -128,13 +121,9 @@ export class ContractService {
 
     const contract = this.contractRepository.create(contractData);
 
-    // Generate contract document
     contract.documentContent = this.generateContractDocument(contract, room, motel, owner, tenant);
 
-    // Save contract
     const savedContract = await this.contractRepository.save(contract);
-
-    // NOTE: Room status is NOT updated to OCCUPIED until tenant approves
 
     return savedContract;
   }
@@ -149,7 +138,6 @@ export class ContractService {
       throw new NotFoundException('Contract not found');
     }
 
-    // Debug logging
     console.log('🔍 Approve Debug:');
     console.log('  - userId from JWT:', userId);
     console.log('  - contract.tenantId:', contract.tenantId);
@@ -157,7 +145,6 @@ export class ContractService {
     console.log('  - Match tenantId?', contract.tenantId === userId);
     console.log('  - Match tenant.id?', contract.tenant?.id === userId);
 
-    // Check if the user is the tenant of this contract
     if (contract.tenant?.id !== userId && contract.tenantId !== userId) {
       throw new ForbiddenException('Only the tenant can approve this contract');
     }
@@ -169,7 +156,6 @@ export class ContractService {
     contract.status = ContractStatus.ACTIVE;
     const savedContract = await this.contractRepository.save(contract);
 
-    // Update Room status to OCCUPIED
     if (contract.type === ContractType.ROOM && contract.roomId) {
       const room = await this.roomRepository.findOne({ where: { id: contract.roomId } });
       if (room) {
@@ -218,7 +204,6 @@ export class ContractService {
       return `${formatMoney(num)}`;
     };
 
-    // Build services list
     const services: string[] = [];
     if (contract.electricityCostPerKwh) {
       services.push(`Điện sinh hoạt: ${contract.electricityCostPerKwh.toLocaleString('vi-VN')} đồng/kWh`);
@@ -462,7 +447,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
       throw new BadRequestException('Cannot delete contract with existing bills. Please terminate instead.');
     }
 
-    // IMPORTANT: Update room status BEFORE deleting contract
     if (contract.type === ContractType.ROOM && contract.roomId) {
       const room = await this.roomRepository.findOne({
         where: { id: contract.roomId }
@@ -475,7 +459,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
       }
     }
 
-    // Now delete the contract
     await this.contractRepository.remove(contract);
 
     return { message: 'Contract deleted successfully' };
@@ -504,7 +487,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
 
     const printer = new PdfPrinter(fonts);
 
-    // Helper functions
     const getFullName = (user: User): string => {
       if (user.firstName && user.lastName) {
         return `${user.lastName} ${user.firstName}`;
@@ -526,7 +508,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
       return `${formatMoney(num)}`;
     };
 
-    // Calculate dates
     const today = new Date();
     const startDate = new Date(contract.startDate);
     const endDate = new Date(contract.endDate);
@@ -534,7 +515,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
       (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
     );
 
-    // Build services list
     const services: any[] = [];
     if (contract.electricityCostPerKwh) {
       services.push({ text: `• Điện sinh hoạt: ${contract.electricityCostPerKwh.toLocaleString('vi-VN')} đồng/kWh` });
@@ -556,7 +536,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
       services.push({ text: 'Không có phí dịch vụ phát sinh' });
     }
 
-    // Prepare rental description
     let rentalDescription: any[] = [];
     let address: string;
     let ownerAddress: string;
@@ -587,7 +566,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
       ? (motel.contactPhone || owner.phoneNumber || '................................')
       : (owner.phoneNumber || '................................');
 
-    // Build PDF content
     const docDefinition: any = {
       pageSize: 'A4',
       pageMargins: [50, 50, 50, 50],
@@ -597,7 +575,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
         lineHeight: 1.3,
       },
       content: [
-        // Header
         {
           text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',
           alignment: 'center',
@@ -617,7 +594,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
           margin: [0, 5, 0, 20],
         },
 
-        // Title
         {
           text: `HỢP ĐỒNG THUÊ ${contract.type === ContractType.ROOM ? 'PHÒNG TRỌ' : 'NHÀ TRỌ'}`,
           alignment: 'center',
@@ -626,7 +602,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
           margin: [0, 0, 0, 20],
         },
 
-        // Date and location
         {
           text: `Hôm nay, ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}, tại ${address}`,
           alignment: 'center',
@@ -638,7 +613,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
           margin: [0, 0, 0, 15],
         },
 
-        // Bên A
         {
           text: `BÊN CHO THUÊ ${contract.type === ContractType.ROOM ? 'PHÒNG TRỌ' : 'NHÀ TRỌ'} (gọi tắt là Bên A):`,
           bold: true,
@@ -649,7 +623,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
         { text: `Thường trú tại: ${ownerAddress}` },
         { text: `Số điện thoại: ${contactPhone}`, margin: [0, 0, 0, 15] },
 
-        // Bên B
         {
           text: `BÊN THUÊ ${contract.type === ContractType.ROOM ? 'PHÒNG TRỌ' : 'NHÀ TRỌ'} (gọi tắt là Bên B):`,
           bold: true,
@@ -664,7 +637,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
           margin: [0, 0, 0, 15],
         },
 
-        // Section 1
         {
           text: `1. NỘI DUNG THUÊ ${contract.type === ContractType.ROOM ? 'PHÒNG TRỌ' : 'NHÀ TRỌ'}`,
           bold: true,
@@ -680,7 +652,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
         { text: `Tiền đặt cọc: ${formatMoney(contract.deposit)} (Bằng chữ: ${numberToWords(contract.deposit)})` },
         { text: `Chu kỳ thanh toán: ${contract.paymentCycleMonths} tháng, thanh toán vào ngày ${contract.paymentDay} hàng tháng`, margin: [0, 0, 0, 15] },
 
-        // Section 2
         {
           text: '2. CÁC KHOẢN PHÍ DỊCH VỤ',
           bold: true,
@@ -689,7 +660,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
         ...services,
         { text: '', margin: [0, 0, 0, 15] },
 
-        // Section 3
         {
           text: '3. TRÁCH NHIỆM BÊN A (Bên cho thuê)',
           bold: true,
@@ -700,7 +670,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
         { text: '• Cung cấp đầy đủ các dịch vụ đã cam kết trong hợp đồng.' },
         { text: '• Thông báo trước ít nhất 30 ngày nếu có thay đổi về giá dịch vụ hoặc nội quy.', margin: [0, 0, 0, 15] },
 
-        // Section 4
         {
           text: '4. TRÁCH NHIỆM BÊN B (Bên thuê)',
           bold: true,
@@ -715,7 +684,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
         { text: `• ${allowCooking ? 'Được phép nấu ăn trong phòng nhưng phải đảm bảo vệ sinh và an toàn phòng cháy chữa cháy.' : 'Không được nấu ăn trong phòng.'}` },
         { text: `• ${allowPets ? 'Được phép nuôi thú cưng nhưng phải đảm bảo vệ sinh và không gây ảnh hưởng đến người khác.' : 'Không được nuôi thú cưng.'}`, margin: [0, 0, 0, 15] },
 
-        // Section 5
         {
           text: '5. ĐIỀU KHOẢN THỰC HIỆN',
           bold: true,
@@ -727,7 +695,6 @@ Hợp đồng được tạo tự động ngày ${formatDate(today)}
         { text: '• Hợp đồng có hiệu lực kể từ ngày ký.' },
         { text: '• Hợp đồng được lập thành 02 bản, mỗi bên giữ 01 bản có giá trị pháp lý như nhau.', margin: [0, 0, 0, 30] },
 
-        // Signatures
         {
           columns: [
             {

@@ -15,7 +15,7 @@ export class SearchRoomDto {
 
     @IsString()
     @IsOptional()
-    keyword?: string; // Search by room number or description
+    keyword?: string;
 
     @IsNumber()
     @IsOptional()
@@ -42,7 +42,6 @@ export class SearchRoomDto {
     @Type(() => Number)
     limit?: number;
 
-    // Filters
     @IsBoolean()
     @IsOptional()
     @Type(() => Boolean)
@@ -65,5 +64,5 @@ export class SearchRoomDto {
 
     @IsString()
     @IsOptional()
-    sort?: string; // 'price_asc', 'price_desc', 'newest'
+    sort?: string;
 }

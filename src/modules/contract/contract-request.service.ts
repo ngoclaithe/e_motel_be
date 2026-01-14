@@ -40,13 +40,11 @@ export class ContractRequestService {
     ) { }
 
     async create(userId: string, userRole: UserRole, dto: CreateContractRequestDto) {
-        // ... (existing helper logic)
         let room: Room = null;
         let motel: Motel = null;
         let landlordId: string;
         let initiatedBy: ContractRequestInitiator;
 
-        // Validate room or motel
         if (dto.type === ContractType.ROOM) {
             if (!dto.roomId) {
                 throw new BadRequestException('roomId is required for ROOM contract request');
@@ -85,7 +83,6 @@ export class ContractRequestService {
             throw new BadRequestException('Invalid contract type');
         }
 
-        // Validate tenant exists
         const tenant = await this.userRepository.findOne({
             where: { id: dto.tenantId },
         });
@@ -94,7 +91,6 @@ export class ContractRequestService {
             throw new NotFoundException('Tenant not found');
         }
 
-        // Determine who initiated
         if (userId === landlordId) {
             initiatedBy = ContractRequestInitiator.LANDLORD;
         } else if (userId === dto.tenantId) {
@@ -103,14 +99,12 @@ export class ContractRequestService {
             throw new ForbiddenException('You must be either the landlord or the tenant');
         }
 
-        // Validate dates
         const startDate = new Date(dto.startDate);
         const endDate = new Date(dto.endDate);
         if (endDate <= startDate) {
             throw new BadRequestException('End date must be after start date');
         }
 
-        // Create request
         const request = this.contractRequestRepository.create({
             type: dto.type,
             roomId: dto.roomId || null,
@@ -134,7 +128,6 @@ export class ContractRequestService {
 
         const savedRequest = await this.contractRequestRepository.save(request);
 
-        // Notify
         const targetUserId = initiatedBy === ContractRequestInitiator.LANDLORD ? dto.tenantId : landlordId;
         const msg = initiatedBy === ContractRequestInitiator.LANDLORD
             ? `Bạn nhận được yêu cầu ký hợp đồng mới từ chủ trọ cho ${room ? 'phòng ' + room.number : 'nhà trọ ' + motel.name}`
@@ -149,8 +142,6 @@ export class ContractRequestService {
         return savedRequest;
     }
 
-    // ... findAllForUser and findOne (unchanged)
-
     async findAllForUser(userId: string, userRole: UserRole) {
         const qb = this.contractRequestRepository
             .createQueryBuilder('request')
@@ -161,9 +152,7 @@ export class ContractRequestService {
             .leftJoinAndSelect('request.contract', 'contract');
 
         if (userRole === UserRole.ADMIN) {
-            // Admin can see all
         } else {
-            // Regular users see requests where they are involved
             qb.where('request.landlordId = :userId OR request.tenantId = :userId', {
                 userId,
             });
@@ -184,7 +173,6 @@ export class ContractRequestService {
             return null;
         }
 
-        // Check permission
         if (
             userRole !== UserRole.ADMIN &&
             request.landlordId !== userId &&
@@ -211,7 +199,6 @@ export class ContractRequestService {
             throw new BadRequestException('Request is not pending');
         }
 
-        // Only the non-initiator can approve
         if (request.initiatedBy === ContractRequestInitiator.LANDLORD) {
             if (request.tenantId !== userId && userRole !== UserRole.ADMIN) {
                 throw new ForbiddenException('Only the tenant can approve this request');
@@ -222,7 +209,6 @@ export class ContractRequestService {
             }
         }
 
-        // Verify room/motel is still available
         if (request.type === ContractType.ROOM && request.roomId) {
             const room = await this.roomRepository.findOne({
                 where: { id: request.roomId },
@@ -237,7 +223,6 @@ export class ContractRequestService {
             }
         }
 
-        // Create the contract
         const contract = await this.contractService.create({
             type: request.type,
             roomId: request.roomId,
@@ -255,7 +240,6 @@ export class ContractRequestService {
             specialTerms: request.specialTerms,
         });
 
-        // Update request
         request.status = ContractRequestStatus.APPROVED;
         request.responseMessage = responseDto.responseMessage;
         request.respondedAt = new Date();
@@ -263,7 +247,6 @@ export class ContractRequestService {
 
         const savedRequest = await this.contractRequestRepository.save(request);
 
-        // Notify Initiator
         const initiatorId = request.initiatedBy === ContractRequestInitiator.LANDLORD ? request.landlordId : request.tenantId;
         await this.notificationService.create({
             title: 'Yêu cầu hợp đồng được chấp nhận',
@@ -289,7 +272,6 @@ export class ContractRequestService {
             throw new BadRequestException('Request is not pending');
         }
 
-        // Only the non-initiator can reject
         if (request.initiatedBy === ContractRequestInitiator.LANDLORD) {
             if (request.tenantId !== userId && userRole !== UserRole.ADMIN) {
                 throw new ForbiddenException('Only the tenant can reject this request');
@@ -306,7 +288,6 @@ export class ContractRequestService {
 
         const savedRequest = await this.contractRequestRepository.save(request);
 
-        // Notify Initiator
         const initiatorId = request.initiatedBy === ContractRequestInitiator.LANDLORD ? request.landlordId : request.tenantId;
         await this.notificationService.create({
             title: 'Yêu cầu hợp đồng bị từ chối',
@@ -327,7 +308,6 @@ export class ContractRequestService {
             throw new BadRequestException('Can only cancel pending requests');
         }
 
-        // Only the initiator can cancel
         if (request.initiatedBy === ContractRequestInitiator.LANDLORD) {
             if (request.landlordId !== userId && userRole !== UserRole.ADMIN) {
                 throw new ForbiddenException('Only the initiator can cancel this request');
@@ -341,7 +321,6 @@ export class ContractRequestService {
         request.status = ContractRequestStatus.CANCELLED;
         const savedRequest = await this.contractRequestRepository.save(request);
 
-        // Notify Not-Initiator (Receiver)
         const receiverId = request.initiatedBy === ContractRequestInitiator.LANDLORD ? request.tenantId : request.landlordId;
         await this.notificationService.create({
             title: 'Yêu cầu hợp đồng đã bị hủy',
@@ -367,7 +346,6 @@ export class ContractRequestService {
             throw new BadRequestException('Can only update pending requests');
         }
 
-        // Only the initiator can update
         if (request.initiatedBy === ContractRequestInitiator.LANDLORD) {
             if (request.landlordId !== userId && userRole !== UserRole.ADMIN) {
                 throw new ForbiddenException('Only the initiator can update this request');
@@ -378,7 +356,6 @@ export class ContractRequestService {
             }
         }
 
-        // Validate dates if provided
         if (updateDto.startDate || updateDto.endDate) {
             const startDate = updateDto.startDate
                 ? new Date(updateDto.startDate)

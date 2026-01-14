@@ -146,7 +146,6 @@ export class MotelService {
       }
     }
 
-    // totalRooms là column trên Motel nên vẫn sort bình thường
     const validSortFields = ['createdAt', 'updatedAt', 'name', 'totalRooms', 'monthlyRent'];
     const sortField = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
 
@@ -188,14 +187,12 @@ export class MotelService {
     });
 
     if (!motel) {
-      // Kiểm tra nếu slug truyền vào có định dạng UUID thì tìm theo ID
       const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug);
 
       try {
         if (isUuid) {
           motel = await this.findOne(slug);
         } else {
-          // Thử tìm theo ID nếu k phải UUID (dữ liệu cũ khác)
           motel = await this.motelRepository.findOne({
             where: { id: slug as any },
             relations: ['owner', 'images', 'rooms'],
