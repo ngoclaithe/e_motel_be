@@ -29,7 +29,7 @@ async function bootstrap() {
 
   app.useGlobalInterceptors(new ConsoleLogInterceptor());
 
-  await app.listen(8002);
-  console.log(`🚀 Server đang chạy tại http://localhost:8002`);
+  await app.listen(8009);
+  console.log(`🚀 Server đang chạy tại http://localhost:8009`);
 }
 bootstrap();
